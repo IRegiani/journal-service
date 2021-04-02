@@ -1,0 +1,16 @@
+{
+  "cors": {
+    "origin": "*",
+    "optionsSuccessStatus": 200
+  },
+  "logger": {
+    "verbose": true,
+    "writeToFile": true,
+    "writeToFileOnly": ["error"]
+  },
+  "server": {
+    "port": 4000,
+    "version": "v1",
+    "ssl": false
+  }
+}
