@@ -11,7 +11,7 @@ module.exports = () => {
       summary: 'Attach a file to a journal',
       operationId: 'attachToJournal',
       parameters: [pathParameters.uid],
-      // TODO: add request body
+      // WIP: add request body
       responses: {
         200: {
           description: 'OK',
@@ -22,7 +22,7 @@ module.exports = () => {
           content: createMessage(notFoundMessage),
         },
         409: {
-          description: fileExists, // https://stackoverflow.com/questions/3825990/http-response-code-for-post-when-resource-already-exists
+          description: fileExists, // WIP: https://stackoverflow.com/questions/3825990/http-response-code-for-post-when-resource-already-exists
           content: createMessage(fileExists),
         },
       },

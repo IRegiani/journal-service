@@ -6,24 +6,26 @@ const helmet = require('helmet');
 const cors = require('cors');
 const swagger = require('swagger-ui-express');
 const { StatusCodes } = require('http-status-codes');
+const StormDB = require('stormdb');
 
-// WIP Check basePath and https
-// WIP Add second process later when processing or receiving videos
+// WIP Check https
+// TODO Add second process later when processing or receiving videos
 
 // Router
 const IndexRouter = require('../routers/indexRouter');
 // const AuthorizationRouter = require('../routers/authorizationRouter');
+const JournalRouter = require('../routers/journalRouter');
 
 // Interceptors
 // WIP: Add authorization interceptor
 const RequestInterceptor = require('../interceptors/request');
 
 class Service {
-  constructor(logger, gitCommit, pid) {
+  constructor(logger, gitCommit) {
     this.gitCommit = gitCommit;
     this.logger = logger;
     this.initDate = new Date().toISOString();
-    this.pid = pid;
+    // this.pid = pid;
   }
 
   async init() {
@@ -40,8 +42,8 @@ class Service {
     this._app.set('trust proxy', true);
 
     // add db instance as middleware
-    // const databaseInstance = await this.startDB();
-    // this._app.use((request, response, next) => { response.locals.db = databaseInstance; next(); });
+    const databaseInstance = await this.startDB();
+    this._app.use((request, response, next) => { response.locals.db = databaseInstance; next(); });
 
     this._app.use(RequestInterceptor());
 
@@ -49,6 +51,7 @@ class Service {
     const initConfig = { gitCommit: this.gitCommit, initDate: this.initDate };
     this._app.use(IndexRouter(initConfig));
     // this._app.use(AuthorizationRouter());
+    this._app.use(JournalRouter());
 
     const swaggerContent = require('../swagger')();
     this._app.use('/documentation', swagger.serve, swagger.setup(swaggerContent));
@@ -64,6 +67,18 @@ class Service {
 
   async listen(...params) {
     this._app.listen(...params);
+  }
+
+  async startDB() {
+    // eslint-disable-next-line new-cap
+    const engine = new StormDB.localFileEngine('./journal-db', { async: true });
+    this._db = new StormDB(engine);
+
+    // set default db value if db is empty
+    this._db.default({ users: [], journals: [], attachments: {}, tags: { entry: [], journal: [] } });
+
+    this.logger.info('Database connected successfully');
+    return this._db;
   }
 }
 

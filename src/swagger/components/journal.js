@@ -1,14 +1,14 @@
-const attachments = require('./file')();
+const attachments = require('./attachment')();
+const entries = require('./entry')();
 const tags = require('./tags')();
 
 const journal = {
   schema: {
     type: 'object',
     properties: {
-      description: {
-        type: 'string',
-        example: 'string',
-        description: 'This field supports really long text and markdown',
+      entries: {
+        type: 'array',
+        items: entries,
       },
       timestamp: {
         type: 'string',

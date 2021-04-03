@@ -3,17 +3,16 @@ module.exports = {
     es6: true,
     jest: true,
   },
-  extends: ['airbnb-base',],
+  extends: ['airbnb-base'],
   globals: {
     Atomics: 'readonly',
     SharedArrayBuffer: 'readonly',
   },
   parserOptions: {
-    ecmaFeatures: { jsx: true },
-    ecmaVersion: 2018,
+    ecmaVersion: 2020,
     sourceType: 'module',
   },
-  plugins: ['import', 'async-await', 'promise'],
+  plugins: ['async-await', 'promise'],
   rules: {
     'max-len': ['error', { code: 180 }],
     'import/prefer-default-export': 'off',

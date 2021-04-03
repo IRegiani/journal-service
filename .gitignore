@@ -4,10 +4,5 @@
 /coverage
 
 npm-debug.log*
-
-firestore-debug*
-firebase-debug*
-ui-debug*
-/local-firestore
-app.yaml
-credentials.json
+journal-service.exe
+journal-db

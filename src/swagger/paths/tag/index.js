@@ -18,7 +18,7 @@ module.exports = () => {
       },
     },
 
-    put: {
+    patch: {
       tags: ['Tag'],
       summary: 'Renames a tag',
       operationId: 'tagRename',

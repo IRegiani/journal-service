@@ -1,5 +1,5 @@
 module.exports = () => {
-  const journalSmallEntries = require('../../components/journal')();
+  const journalSmallEntries = require('../../components/journal')(); // TODO
   const { pathParameters } = require('../../parameters')();
   const { createMessage } = require('../../helpers/messages');
   const notFoundMessage = 'No attachtment found';
@@ -7,7 +7,7 @@ module.exports = () => {
   return {
     get: {
       tags: ['Attachment'],
-      summary: 'Retrieves a journal entry',
+      summary: 'Retrieves a set of journal entries',
       operationId: 'getAttachmentJournals',
       parameters: [pathParameters.uid],
       responses: {

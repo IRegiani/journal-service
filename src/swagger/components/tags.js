@@ -2,6 +2,6 @@ module.exports = () => ({
   type: 'array',
   items: {
     type: 'string',
-    example: 'Liz',
+    example: 'Lizs2',
   },
 });

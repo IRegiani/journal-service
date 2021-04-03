@@ -19,11 +19,10 @@ module.exports = () => ({
       type: 'string',
       format: 'uuid',
     },
-    journal: {
-      type: 'string',
-      format: 'uuid',
-    },
     hash: {
+      type: 'string',
+    },
+    path: {
       type: 'string',
     },
   },

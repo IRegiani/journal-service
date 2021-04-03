@@ -36,6 +36,10 @@ module.exports = () => {
                 type: 'string',
                 description: 'Only when service is running in the same computer as the UI',
               },
+              addToEntry: {
+                type: 'boolean',
+                description: 'Add this attachment as the main entry in the journal entry',
+              },
             },
             required: ['type'],
           },
