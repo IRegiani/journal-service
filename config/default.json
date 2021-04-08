@@ -6,11 +6,13 @@
   "logger": {
     "verbose": true,
     "writeToFile": true,
-    "writeToFileOnly": ["error"]
+    "writeToFileOnly": [
+      "error"
+    ]
   },
   "server": {
     "port": 4000,
-    "version": "v1",
+    "version": "",
     "ssl": false
   }
 }

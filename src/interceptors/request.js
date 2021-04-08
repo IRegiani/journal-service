@@ -26,7 +26,7 @@ module.exports = () => {
 
     // const forwardList = requestContext.get('forwardList');
 
-    logger[loggerLevel]('Request completed', { status, method, url, userAgent, ip, duration }); // TODO: break line
+    logger[loggerLevel]('Request completed', { status, method, url, userAgent, ip, duration }, '\n');
   };
 
   const RequestInterceptor = (request, response, next) => {

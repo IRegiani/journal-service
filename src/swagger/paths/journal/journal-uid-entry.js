@@ -3,39 +3,15 @@ module.exports = () => {
   const { pathParameters } = require('../../parameters')();
   const { createMessage } = require('../../helpers/messages');
   const notFoundMessage = 'No journal found';
-  const fileExists = 'Attachment was already uploaded';
-
-  const requestBody = {
-    schema: {
-      type: 'object',
-      properties: {
-        timestamp: {
-          type: 'string',
-          format: 'date',
-          example: '2021-04-02T01:23:57.183Z',
-        },
-        entry: {
-          type: 'string',
-          example: 'First day in my trip to the beach',
-          description: 'This field supports really long text and markdown',
-        },
-        // tags,
-      },
-      required: ['timestamp'],
-    },
-  };
+  const fileExists = 'Attachment already exists on this journal';
 
   return {
     put: {
       tags: ['Journal'],
-      summary: 'Attach a file to a journal',
+      summary: 'Creates a new entry into a journal',
       operationId: 'attachToJournal',
       parameters: [pathParameters.uid],
-      requestBody: {
-        required: true,
-        description: 'Creates a full journal entry',
-        content: { 'application/application': requestBody },
-      },
+      // WIP: add request body
       responses: {
         200: {
           description: 'OK',

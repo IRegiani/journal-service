@@ -7,7 +7,7 @@ module.exports = () => ({
       type: 'string',
       description: 'This field supports really long text and markdown',
     },
-    date: {
+    createdAt: {
       type: 'string',
       format: 'date-time',
     },

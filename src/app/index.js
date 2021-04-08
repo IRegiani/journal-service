@@ -4,6 +4,7 @@ const express = require('express');
 const requestContext = require('express-http-context');
 const helmet = require('helmet');
 const cors = require('cors');
+const skipper = require('skipper');
 const swagger = require('swagger-ui-express');
 const { StatusCodes } = require('http-status-codes');
 const StormDB = require('stormdb');
@@ -46,15 +47,17 @@ class Service {
     this._app.use((request, response, next) => { response.locals.db = databaseInstance; next(); });
 
     this._app.use(RequestInterceptor());
+    this._app.use(skipper());
 
     // Routers
     const initConfig = { gitCommit: this.gitCommit, initDate: this.initDate };
-    this._app.use(IndexRouter(initConfig));
+    const apiVersion = config.get('server.version');
+    this._app.use(apiVersion, IndexRouter(initConfig));
     // this._app.use(AuthorizationRouter());
-    this._app.use(JournalRouter());
+    this._app.use(apiVersion, JournalRouter());
 
     const swaggerContent = require('../swagger')();
-    this._app.use('/documentation', swagger.serve, swagger.setup(swaggerContent));
+    this._app.use(`${apiVersion}/documentation`, swagger.serve, swagger.setup(swaggerContent));
 
     // eslint-disable-next-line no-unused-vars
     const errorHandler = (err, req, res, next) => {

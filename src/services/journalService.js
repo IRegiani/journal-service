@@ -1,5 +1,6 @@
+// WIP
 module.exports = ({ db }) => {
-  const addTags = async (tags = [], tagType) => {
+  const updateJournal = async (tags = [], tagType) => {
     const currentTags = db.get('tags').value()[tagType];
     const newTags = [];
 
@@ -16,16 +17,7 @@ module.exports = ({ db }) => {
     return tags.map((tag) => tag.toLowerCase());
   };
 
-  const updateEntryTags = (tags) => addTags(tags, 'entry');
-  const updateJournalTags = (tags) => addTags(tags, 'journal');
-
   return {
-    // Updates the tag index
-    updateEntryTags,
-    updateJournalTags,
-
-    // WIP: Updates all journal/entries tags
-    // renameEntryTag
-    // renameJournalTag
+    updateJournal,
   };
 };

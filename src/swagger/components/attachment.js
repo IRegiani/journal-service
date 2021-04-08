@@ -1,19 +1,8 @@
-const { ATTACHMENT_TYPES } = require('../../utils/constants');
-
 module.exports = () => ({
   type: 'object',
   properties: {
-    type: {
-      type: 'string',
-      example: 'video',
-      enum: ATTACHMENT_TYPES,
-    },
     size: {
       type: 'string',
-    },
-    url: {
-      type: 'string',
-      format: 'uri',
     },
     uid: {
       type: 'string',
@@ -25,5 +14,14 @@ module.exports = () => ({
     path: {
       type: 'string',
     },
+    createdAt: {
+      type: 'date-time',
+    },
+    addToEntry: {
+      type: 'boolean',
+      default: 'false',
+      description: 'Add this attachment as the main entry in the journal entry',
+    },
   },
+  required: ['type'],
 });
