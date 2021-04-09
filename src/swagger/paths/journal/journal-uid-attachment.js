@@ -46,7 +46,7 @@ module.exports = () => {
           content: createMessage(notFoundMessage),
         },
         409: {
-          description: fileExists, // WIP: https://stackoverflow.com/questions/3825990/http-response-code-for-post-when-resource-already-exists
+          description: fileExists,
           content: createMessage(fileExists),
         },
       },

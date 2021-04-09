@@ -1,23 +1,20 @@
-// WIP
+// const { createHash } = require('../utils/utils');
+// const { FILE_EXTENSIONS, FILE_TYPES, FILES_DIRECTORY, MAX_FILE_BYTES } = require('../utils/constants');
+
 module.exports = ({ db }) => {
-  const updateJournal = async (tags = [], tagType) => {
-    const currentTags = db.get('tags').value()[tagType];
-    const newTags = [];
+  // if journal has no entry and fileEntry = true, updateHistory mantains since its the first entry
+  // this request happens within seconds of jounral creation, it has no update history
+  const addEntry = async (uid, newEntry) => {
+    const journal = db.get('journals').value().find((jrl) => jrl.uid === uid);
 
-    tags.forEach((tag) => {
-      const lowerCaseTag = tag.toLowerCase();
-      if (!currentTags.includes(lowerCaseTag)) newTags.push(lowerCaseTag);
-    });
+    journal.entries.push(newEntry);
+    // journal.updateHistory.push();
 
-    if (newTags.length > 0) {
-      currentTags.push(...newTags);
-      await db.save();
-    }
-
-    return tags.map((tag) => tag.toLowerCase());
+    await db.save();
+    return journal;
   };
 
   return {
-    updateJournal,
+    addEntry,
   };
 };

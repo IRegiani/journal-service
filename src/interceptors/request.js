@@ -4,21 +4,25 @@ const logger = require('../utils/logger').initLogger({ name: 'REQUEST INTERCEPTO
 
 module.exports = () => {
   const beforeRequest = (request) => {
+    console.log('here, before!');
     const reqId = Math.random().toString(36).substr(2, 9);
+    // TODO: This should go to authentication controller/service
     const { username } = request.body;
 
     requestContext.set('reqId', reqId);
     requestContext.set('username', username);
-    requestContext.set('initTime', new Date().getMilliseconds());
+    requestContext.set('initTime', Date.now());
+    console.log('requestContext', requestContext.get('initTime'));
     // requestContext.set('forwardList', request.get('X-Forwarded-For'));
   };
 
   const afterFinished = (request, response) => {
+    console.log('here, after!', requestContext.get('initTime'));
     const ip = request.ip || request.connection.remoteAddress;
     const userAgent = request.get('User-Agent');
     const status = response.statusCode;
     const { method, url } = request;
-    const duration = new Date().getMilliseconds() - requestContext.get('initTime');
+    const duration = Date.now() - requestContext.get('initTime');
 
     let loggerLevel = 'complete';
     if (status >= 500 && status < 600) loggerLevel = 'error';

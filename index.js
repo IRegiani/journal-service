@@ -16,7 +16,7 @@ const init = async () => {
 
     service.listen(port, (error) => {
       if (error) throw error;
-      logger.success(`Service started on http://localhost:${port} 🚀\n`);
+      logger.success(`Service started 🚀 See routes at: http://localhost:${port}/documentation \n`);
     });
   } catch (error) {
     logger.error(`Error initializing Service: ${error.message}`, error);

@@ -10,7 +10,7 @@ const { StatusCodes } = require('http-status-codes');
 const StormDB = require('stormdb');
 
 // WIP Check https
-// TODO Add second process later when processing or receiving videos
+// TODO: Add second process later when processing or receiving videos, or webhooks
 
 // Router
 const IndexRouter = require('../routers/indexRouter');
@@ -18,7 +18,6 @@ const IndexRouter = require('../routers/indexRouter');
 const JournalRouter = require('../routers/journalRouter');
 
 // Interceptors
-// WIP: Add authorization interceptor
 const RequestInterceptor = require('../interceptors/request');
 
 class Service {
@@ -78,7 +77,7 @@ class Service {
     this._db = new StormDB(engine);
 
     // set default db value if db is empty
-    this._db.default({ users: [], journals: [], attachments: {}, tags: { entry: [], journal: [] } });
+    this._db.default({ users: {}, journals: [], files: {}, tags: { entry: [], journal: [] } });
 
     this.logger.info('Database connected successfully');
     return this._db;

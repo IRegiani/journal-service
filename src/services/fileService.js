@@ -1,7 +1,7 @@
 const os = require('os');
 const crypto = require('crypto');
 const fs = require('fs');
-const fsp = require("fs/promises");
+const fsp = require('fs').promises;
 const { StatusCodes } = require('http-status-codes');
 const { v4: generateUid } = require('uuid');
 
@@ -19,12 +19,14 @@ module.exports = ({ db }) => {
   });
 
   const verifyFileName = (fileName) => {
-    const currentAttachments = db.get('attachments').value();
+    const currentFiles = db.get('files').value();
 
     if (fs.existsSync(`${FILES_DIRECTORY}/${fileName}`)) return new CustomError('A file with this name alredy exists in the directory', StatusCodes.CONFLICT);
 
-    if (Object.keys(currentAttachments).some(attachmentUid => getFileName(currentAttachments[attachmentUid].path) === fileName))
+    if (Object.keys(currentFiles).some((fileUid) => getFileName(currentFiles[fileUid].path) === fileName)) {
       return new CustomError('A file with this name alredy exists', StatusCodes.CONFLICT);
+    }
+    return null;
   };
 
   const validateFileMetada = ({ filename, type }) => {
@@ -32,6 +34,7 @@ module.exports = ({ db }) => {
 
     if (!FILE_EXTENSIONS.includes(fileExtension)) return new CustomError(`Invalid file extension: ${fileExtension}`, StatusCodes.BAD_REQUEST);
     if (!FILE_TYPES.includes(type)) return new CustomError(`Invalid file type: ${type}`, StatusCodes.BAD_REQUEST);
+    return null;
   };
 
   const checkPath = () => {
@@ -39,39 +42,46 @@ module.exports = ({ db }) => {
       logger.debug('Directory does not exist, creating');
       fs.mkdirSync(FILES_DIRECTORY);
     }
-  }
+  };
 
   const saveEntryToDb = async (filePath, fileHash, { ino, birthtimeMs, size }, fileType, date) => {
     const uid = generateUid();
     const createdAt = date.toISOString();
+    const hash = createHash(`${fileHash}-${createdAt}-${ino}-${birthtimeMs}`);
 
-    const newEntry = {
-      uid,
-      path: filePath,
-      size,
-      type: fileType,
-      createdAt,
-      hash: createHash(`${fileHash}-${createdAt}-${ino}-${birthtimeMs}`),
-    };
+    const newEntry = { uid, path: filePath, size, type: fileType, createdAt, hash };
 
-    db.get('attachments').set(uid, newEntry);
+    db.get('files').set(uid, newEntry);
     await db.save();
+
     logger.info('Attachment created', uid);
-    return { uid, path: filePath };
+    return newEntry;
+  };
+
+  const cleanTempFileAndReject = (reject, files) => (error) => {
+    logger.debug('Cleaning temp files');
+    files.map(({ fd }) => fs.unlinkSync(fd));
+    reject(error);
   };
 
   const receiveFile = (request) => new Promise((resolve, reject) => {
     const startDate = new Date();
-
     const processFile = async (err, file) => {
-      if (err) return reject(err);
+      if (err) {
+        if (err.code === 'E_EXCEEDS_UPLOAD_LIMIT') {
+          return reject(new CustomError(`File is larger than the allowed limit by ${err.written - MAX_FILE_BYTES} bytes`, StatusCodes.REQUEST_TOO_LONG, 'E_EXCEEDS_UPLOAD_LIMIT'));
+        }
+        return reject(err);
+      }
 
       if (file.length === 0) {
-        logger.debug('No file - Skip processing');
+        logger.debug('No file, skipping file processing');
         return resolve(null);
       }
 
-      if (file.length > 1) return reject(new CustomError('Only allowed one file per request', StatusCodes.BAD_REQUEST));
+      const rejectError = cleanTempFileAndReject(reject, file);
+
+      if (file.length > 1) return rejectError(new CustomError('Only allowed one file per request', StatusCodes.BAD_REQUEST));
 
       const { size, filename, type, fd: oldPath } = file[0];
       const downloadDurationSec = (new Date() - startDate) / 1000;
@@ -81,28 +91,26 @@ module.exports = ({ db }) => {
       logger.info(`Received file: ${filename}, processing. Average speed: ${averageSpeed} Mbps`, { size: totalSizeMega });
 
       const isInvalid = validateFileMetada(file[0]);
-      if (isInvalid) return reject(isInvalid);
+      if (isInvalid) return rejectError(isInvalid);
 
       const hash = await createFileHash(oldPath);
 
       const isNotUnique = verifyFileName(filename);
-      if (isNotUnique) return reject(isNotUnique);
+      if (isNotUnique) return rejectError(isNotUnique);
 
       logger.info('File validated, saving file', hash);
 
       const fileStat = await fsp.lstat(oldPath);
 
       checkPath();
-      const newPath = `${FILES_DIRECTORY}/${filename}`
+      const newPath = `${FILES_DIRECTORY}/${filename}`;
       await fsp.rename(oldPath, newPath);
 
-      console.log('newPath', newPath);
+      const result = await saveEntryToDb(newPath, hash, fileStat, type, startDate);
+      return resolve(result);
+    };
 
-      const result = await saveEntryToDb(newPath, hash, fileStat, type, startDate)
-      resolve(result);
-    }
-
-    const { isNoop: noFile } = request.file('file').upload({ dirname: os.tmpdir(), maxBytes: MAX_FILE_BYTES }, processFile)
+    const { isNoop: noFile } = request.file('file').upload({ dirname: os.tmpdir(), maxBytes: MAX_FILE_BYTES }, processFile);
 
     if (noFile) resolve(null);
   });

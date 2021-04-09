@@ -23,15 +23,14 @@ module.exports = () => {
         const currentDate = new Date().toISOString();
 
         const journalTags = await tagService.updateJournalTags(tags);
-        const firstEntry = await entryService.createEntry(currentDate, entry, entryTags);
+        const firstEntry = await entryService.createEntry(currentDate, entry, entryTags) || [];
 
         const journalEntry = {
           createdAt: currentDate,
           updateHistory: [],
           uid: generateUid(),
           entries: firstEntry,
-          author: user, // WIP: improve this
-          attachments: {},
+          author: user, // TODO: Add user uid
           tags: journalTags,
         };
 
@@ -50,7 +49,7 @@ module.exports = () => {
 
     // fileEntry false treats the file as attachment to entry
     async addEntry(request, response, next) {
-      const { body: { description, tags, fileEntry }, params: { uid }, file } = request;
+      const { body: { description, tags, fileEntry }, params: { uid } } = request;
       const { db } = response.locals;
 
       const fileService = require('../services/fileService')({ db });
@@ -58,32 +57,24 @@ module.exports = () => {
 
       try {
         logger.info('Creating entry');
-
-        const pendingFile = await fileService.receiveFile(request);
-
-        // const { isNoop: noFile, ...others } = file('file').upload({ dirname: os.tmpdir() }, callback);
-
-        // console.log('filereturn', others);
-
-        console.log('noFile', pendingFile);
-        console.log('pendingFile', JSON.stringify(pendingFile));
-        const noFile = false;
-
-        // if journal has no entry and fileEntry = true, updateHistory mantains since its the first entry
-        // if no entry and has a flag updateEntryTags, read journal date
+        const journal = db.get('journals').value().find((jrl) => jrl.uid === uid);
 
         if (!validate(uid)) throw new CustomError('Invalid UID', StatusCodes.BAD_REQUEST);
-        if (!(description || noFile)) throw new CustomError('Missing entry body', StatusCodes.BAD_REQUEST);
+        if (!journal) throw new CustomError(`Journal ${uid} not found`, StatusCodes.NOT_FOUND);
 
-        const entry = await entryService.createAndSaveEntry(uid, description, pendingFile, fileEntry, tags);
+        const file = await fileService.receiveFile(request);
 
+        if (!(description || file)) throw new CustomError('Missing entry body', StatusCodes.BAD_REQUEST);
+        if (fileEntry && !file) throw new CustomError('File is required when using *fileEntry*', StatusCodes.BAD_REQUEST);
 
-        const message = noFile ? 'Entry created sucessfully' : 'Entry created sucessfully with file';
+        const entry = await entryService.createAndSaveEntry(journal, description, file, fileEntry, tags);
+
+        const message = file ? 'Entry created sucessfully with file' : 'Entry created sucessfully';
         logger.success(message);
 
         return response.status(StatusCodes.CREATED).json(entry);
       } catch (error) {
-        if (isExpectedError(error)) return handleError(response, error, logger);
+        if (isExpectedError(error, 'E_EXCEEDS_UPLOAD_LIMIT')) return handleError(response, error, logger);
 
         return next(error);
       }
