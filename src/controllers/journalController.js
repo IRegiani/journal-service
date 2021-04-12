@@ -1,5 +1,5 @@
 const { StatusCodes } = require('http-status-codes');
-const { v4: generateUid, validate } = require('uuid');
+const { validate } = require('uuid');
 
 const logger = require('../utils/logger').initLogger({ name: 'JOURNAL CONTROLLER' });
 const { isIsoDateString } = require('../utils/validators');
@@ -11,35 +11,18 @@ module.exports = () => {
       const { body: { timestamp, entry, tags, entryTags }, user } = request;
       const { db } = response.locals;
 
-      const tagService = require('../services/tagService')({ db });
-      const entryService = require('../services/entryService')({ db });
+      const journalService = require('../services/journalService')({ db });
 
       try {
         logger.info('Creating journal entry');
 
-        if (!timestamp) throw new CustomError('Missing timestamp', StatusCodes.BAD_REQUEST);
-        if (!isIsoDateString(timestamp)) throw new CustomError('Invalid timestamp', StatusCodes.BAD_REQUEST);
+        if (timestamp && !isIsoDateString(timestamp)) throw new CustomError('Invalid timestamp', StatusCodes.BAD_REQUEST);
 
-        const currentDate = new Date().toISOString();
+        const journal = await journalService.createJournalEntry(timestamp, entry, entryTags, tags, user);
 
-        const journalTags = await tagService.updateJournalTags(tags);
-        const firstEntry = await entryService.createEntry(currentDate, entry, entryTags) || [];
+        logger.success('Journal created successfully', { journalUid: journal.uid });
 
-        const journalEntry = {
-          createdAt: currentDate,
-          updateHistory: [],
-          uid: generateUid(),
-          entries: firstEntry,
-          author: user, // TODO: Add user uid
-          tags: journalTags,
-        };
-
-        db.get('journals').push(journalEntry);
-        await db.save();
-
-        logger.success('Journal created sucessfully', { journalUid: journalEntry.uid });
-
-        return response.status(StatusCodes.CREATED).json(journalEntry);
+        return response.status(StatusCodes.CREATED).json(journal);
       } catch (error) {
         if (isExpectedError(error)) return handleError(response, error, logger);
 
@@ -54,13 +37,13 @@ module.exports = () => {
 
       const fileService = require('../services/fileService')({ db });
       const entryService = require('../services/entryService')({ db });
+      const journalService = require('../services/journalService')({ db });
 
       try {
         logger.info('Creating entry');
-        const journal = db.get('journals').value().find((jrl) => jrl.uid === uid);
+        const journal = journalService.getJournal(uid);
 
         if (!validate(uid)) throw new CustomError('Invalid UID', StatusCodes.BAD_REQUEST);
-        if (!journal) throw new CustomError(`Journal ${uid} not found`, StatusCodes.NOT_FOUND);
 
         const file = await fileService.receiveFile(request);
 
@@ -69,7 +52,7 @@ module.exports = () => {
 
         const entry = await entryService.createAndSaveEntry(journal, description, file, fileEntry, tags);
 
-        const message = file ? 'Entry created sucessfully with file' : 'Entry created sucessfully';
+        const message = file ? 'Entry created successfully with file' : 'Entry created successfully';
         logger.success(message);
 
         return response.status(StatusCodes.CREATED).json(entry);

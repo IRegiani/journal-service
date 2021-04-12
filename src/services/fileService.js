@@ -9,6 +9,7 @@ const logger = require('../utils/logger').initLogger({ name: 'FILE SERVICE' });
 const { CustomError } = require('../utils/error')();
 const { FILE_EXTENSIONS, FILE_TYPES, FILES_DIRECTORY, MAX_FILE_BYTES } = require('../utils/constants');
 const { createHash, getFileName } = require('../utils/utils');
+const { isIsoDateString } = require('../utils/validators');
 
 module.exports = ({ db }) => {
   const createFileHash = (filePath) => new Promise((resolve) => {
@@ -21,15 +22,15 @@ module.exports = ({ db }) => {
   const verifyFileName = (fileName) => {
     const currentFiles = db.get('files').value();
 
-    if (fs.existsSync(`${FILES_DIRECTORY}/${fileName}`)) return new CustomError('A file with this name alredy exists in the directory', StatusCodes.CONFLICT);
+    if (fs.existsSync(`${FILES_DIRECTORY}/${fileName}`)) return new CustomError('A file with this name already exists in the directory', StatusCodes.CONFLICT);
 
     if (Object.keys(currentFiles).some((fileUid) => getFileName(currentFiles[fileUid].path) === fileName)) {
-      return new CustomError('A file with this name alredy exists', StatusCodes.CONFLICT);
+      return new CustomError('A file with this name already exists', StatusCodes.CONFLICT);
     }
     return null;
   };
 
-  const validateFileMetada = ({ filename, type }) => {
+  const validateFileMetadata = ({ filename, type }) => {
     const fileExtension = filename.substring(filename.lastIndexOf('.') + 1);
 
     if (!FILE_EXTENSIONS.includes(fileExtension)) return new CustomError(`Invalid file extension: ${fileExtension}`, StatusCodes.BAD_REQUEST);
@@ -44,12 +45,12 @@ module.exports = ({ db }) => {
     }
   };
 
-  const saveEntryToDb = async (filePath, fileHash, { ino, birthtimeMs, size }, fileType, date) => {
+  const saveEntryToDb = async (filePath, fileHash, { ino, birthtimeMs, size }, fileType, date, originalDate) => {
     const uid = generateUid();
     const createdAt = date.toISOString();
     const hash = createHash(`${fileHash}-${createdAt}-${ino}-${birthtimeMs}`);
 
-    const newEntry = { uid, path: filePath, size, type: fileType, createdAt, hash };
+    const newEntry = { uid, path: filePath, size, type: fileType, createdAt, hash, originalDate };
 
     db.get('files').set(uid, newEntry);
     await db.save();
@@ -90,13 +91,16 @@ module.exports = ({ db }) => {
 
       logger.info(`Received file: ${filename}, processing. Average speed: ${averageSpeed} Mbps`, { size: totalSizeMega });
 
-      const isInvalid = validateFileMetada(file[0]);
+      const isInvalid = validateFileMetadata(file[0]);
       if (isInvalid) return rejectError(isInvalid);
 
       const hash = await createFileHash(oldPath);
 
       const isNotUnique = verifyFileName(filename);
       if (isNotUnique) return rejectError(isNotUnique);
+
+      const lastModified = request.headers['Last-Modified'];
+      const originalDate = isIsoDateString(lastModified) ? lastModified : undefined;
 
       logger.info('File validated, saving file', hash);
 
@@ -106,7 +110,7 @@ module.exports = ({ db }) => {
       const newPath = `${FILES_DIRECTORY}/${filename}`;
       await fsp.rename(oldPath, newPath);
 
-      const result = await saveEntryToDb(newPath, hash, fileStat, type, startDate);
+      const result = await saveEntryToDb(newPath, hash, fileStat, type, startDate, originalDate);
       return resolve(result);
     };
 
