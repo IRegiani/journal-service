@@ -1,11 +1,37 @@
 const config = require('config');
+const fs = require('fs');
 const requestContext = require('express-http-context');
 const { Signale } = require('signale');
+const { Writable } = require('stream');
 
-// WIP: Add write to log file
+const stream = [process.stderr];
+if (config.get('logger.writeToFile')) {
+  const fileStream = fs.createWriteStream('./log.txt', { flags: 'a' });
+  fileStream.write(`\n
+    ---------------------------------------------------------------------------------
+    ------------------           ${new Date().toISOString()}          ------------------
+    ---------------------------------------------------------------------------------
+  \n`);
+
+  const clearBuffer = (buffer) => {
+    const newBuffer = [];
+    const skippedIndex = [];
+    // eslint-disable-next-line
+    for (let [index, value] of buffer.entries()) {
+      // 27 is the byte representation of the control character. TODO: This is also cutting the first letter of the logger level
+      if (value === 27) skippedIndex.push(...[index, index + 1, index + 2, index + 3, index + 4]);
+      if (!skippedIndex.includes(index)) newBuffer.push(buffer[index]);
+    }
+    return Buffer.from(newBuffer);
+  };
+
+  const write = (buffer, enc, cb) => { fileStream.write(clearBuffer(buffer)); cb(null); };
+  const writableStream = new Writable({ write });
+  stream.push(writableStream);
+}
 
 const levels = ['info', 'error', 'success', 'warn', 'debug', 'complete'];
-const options = { types: { debug: { color: 'magenta', label: 'debug', logLevel: 'debug' } } };
+const options = { types: { debug: { color: 'magenta', label: 'debug', logLevel: 'debug' } }, stream };
 
 const errorHasStack = (error) => error instanceof Error && error.stack;
 
@@ -40,8 +66,6 @@ const initLogger = ({ name, verbose }) => {
   const shouldShowMetadata = typeof verbose === 'undefined' ? config.get('logger.verbose') : verbose;
 
   const logger = levels.reduce((finalLogger, level) => ({ ...finalLogger, [level]: handleLog(level, shouldShowMetadata, name) }), {});
-  logger.flush = async () => { }; // write to file here too
-  logger.logToFile = () => { };
 
   return logger;
 };

@@ -30,7 +30,25 @@ module.exports = () => {
       }
     },
 
-    // fileEntry false treats the file as attachment to entry
+    async retrieve(request, response, next) {
+      const { params: { uid } } = request;
+      const { db } = response.locals;
+
+      const journalService = require('../services/journalService')({ db });
+      try {
+        logger.info('Getting Journal');
+
+        if (!validate(uid)) throw new CustomError('Invalid UID', StatusCodes.BAD_REQUEST);
+        const journal = journalService.getJournal(uid);
+
+        return response.status(StatusCodes.OK).json(journal);
+      } catch (error) {
+        if (isExpectedError(error)) return handleError(response, error, logger);
+
+        return next(error);
+      }
+    },
+
     async addEntry(request, response, next) {
       const { body: { description, tags, fileEntry }, params: { uid } } = request;
       const { db } = response.locals;
@@ -41,10 +59,9 @@ module.exports = () => {
 
       try {
         logger.info('Creating entry');
-        const journal = journalService.getJournal(uid);
 
         if (!validate(uid)) throw new CustomError('Invalid UID', StatusCodes.BAD_REQUEST);
-
+        const journal = journalService.getJournal(uid);
         const file = await fileService.receiveFile(request);
 
         if (!(description || file)) throw new CustomError('Missing entry body', StatusCodes.BAD_REQUEST);
@@ -58,6 +75,29 @@ module.exports = () => {
         return response.status(StatusCodes.CREATED).json(entry);
       } catch (error) {
         if (isExpectedError(error, 'E_EXCEEDS_UPLOAD_LIMIT')) return handleError(response, error, logger);
+
+        return next(error);
+      }
+    },
+
+    async retrieveEntry(request, response, next) {
+      const { params: { uid } } = request;
+      const { db } = response.locals;
+
+      const entryService = require('../services/entryService')({ db });
+      const journalService = require('../services/journalService')({ db });
+
+      try {
+        logger.info('Getting journal entries', { uid });
+
+        if (!validate(uid)) throw new CustomError('Invalid UID', StatusCodes.BAD_REQUEST);
+        const { entries } = journalService.getJournal(uid);
+
+        const res = await entryService.retrieveEntriesDetails(entries);
+
+        return response.status(StatusCodes.OK).json(res);
+      } catch (error) {
+        if (isExpectedError(error)) return handleError(response, error, logger);
 
         return next(error);
       }

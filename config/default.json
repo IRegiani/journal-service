@@ -5,10 +5,7 @@
   },
   "logger": {
     "verbose": true,
-    "writeToFile": true,
-    "writeToFileOnly": [
-      "error"
-    ]
+    "writeToFile": false
   },
   "server": {
     "port": 4000,

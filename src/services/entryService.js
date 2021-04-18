@@ -1,12 +1,15 @@
 const { differenceInSeconds } = require('date-fns');
+const { StatusCodes } = require('http-status-codes');
 
-const { createHash } = require('../utils/utils');
+const { createHash, getObjectKeys } = require('../utils/utils');
 const logger = require('../utils/logger').initLogger({ name: 'ENTRY SERVICE' });
 const { MAX_JOURNAL_UPDATE_TIMEOUT } = require('../utils/constants');
+const { CustomError } = require('../utils/error')();
 
 module.exports = (options) => {
   const tagService = require('./tagService')(options);
   const journalService = require('./journalService')(options);
+  const fileService = require('./fileService')(options);
 
   // const updateEntry = async () => {};
 
@@ -39,8 +42,32 @@ module.exports = (options) => {
     return updatedJournal;
   };
 
+  const retrieveEntriesDetails = async (entries) => {
+    const hashes = entries.map(({ description, fileUids, createdAt }) => createHash(`${description}${fileUids}${createdAt}`));
+
+    logger.debug(`Validating ${entries.length} entries`);
+    if (!entries.every((entry) => hashes.includes(entry.hash))) throw new CustomError('Entry has been modified/replaced', StatusCodes.INTERNAL_SERVER_ERROR);
+
+    const fileUids = entries.filter((entry) => entry.fileUids).map((ety) => ety.fileUids).flat();
+    // it's an array entries, with an array of files. Beware, not all entry has a file
+    const fileList = await Promise.all(fileUids.map(fileService.retrieveFileDetails));
+
+    const fileKeys = ['uid', 'size', 'type', 'createdAt'];
+    const filesWithUid = fileList.reduce((obj, file) => ({ ...obj, [file.uid]: getObjectKeys(fileKeys, file) }), {});
+
+    return entries.map(({ createdAt, tags, hash, description, fileEntry }, index) => ({
+      description,
+      createdAt,
+      files: entries[index].fileUids && getObjectKeys(entries[index].fileUids, filesWithUid),
+      fileEntry,
+      tags,
+      hash,
+    }));
+  };
+
   return {
     createEntry,
     createAndSaveEntry,
+    retrieveEntriesDetails,
   };
 };

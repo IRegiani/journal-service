@@ -5,10 +5,10 @@ module.exports = () => {
   // JournalRouter.use('/journal', AuthorizationController.authorize);
 
   JournalRouter.route('/journal').post(JournalController.create);
-  // JournalRouter.route('/journal:uid').get(JournalController.retrieve);
+  JournalRouter.route('/journal:uid').get(JournalController.retrieve);
   JournalRouter.route('/journal/:uid/entry')
-    .put(JournalController.addEntry);
-  //  .get(JournalController.getAttachments);
+    .put(JournalController.addEntry)
+    .get(JournalController.retrieveEntry);
 
   return JournalRouter;
 };

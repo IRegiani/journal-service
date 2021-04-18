@@ -40,15 +40,15 @@ module.exports = ({ db }) => {
 
   const checkPath = () => {
     if (!fs.existsSync(FILES_DIRECTORY)) {
-      logger.debug('Directory does not exist, creating');
+      logger.warn('Directory does not exist, creating');
       fs.mkdirSync(FILES_DIRECTORY);
     }
   };
 
-  const saveEntryToDb = async (filePath, fileHash, { ino, birthtimeMs, size }, fileType, date, originalDate) => {
+  const saveEntryToDb = async (filePath, fileHash, { ino, birthtimeNs, size }, fileType, date, originalDate) => {
     const uid = generateUid();
     const createdAt = date.toISOString();
-    const hash = createHash(`${fileHash}-${createdAt}-${ino}-${birthtimeMs}`);
+    const hash = createHash(`${fileHash}-${createdAt}-${ino}-${birthtimeNs}`);
 
     const newEntry = { uid, path: filePath, size, type: fileType, createdAt, hash, originalDate };
 
@@ -60,7 +60,7 @@ module.exports = ({ db }) => {
   };
 
   const cleanTempFileAndReject = (reject, files) => (error) => {
-    logger.debug('Cleaning temp files');
+    logger.warn('Cleaning temp files');
     files.map(({ fd }) => fs.unlinkSync(fd));
     reject(error);
   };
@@ -72,6 +72,7 @@ module.exports = ({ db }) => {
         if (err.code === 'E_EXCEEDS_UPLOAD_LIMIT') {
           return reject(new CustomError(`File is larger than the allowed limit by ${err.written - MAX_FILE_BYTES} bytes`, StatusCodes.REQUEST_TOO_LONG, 'E_EXCEEDS_UPLOAD_LIMIT'));
         }
+        // Aborted requests end up here
         return reject(err);
       }
 
@@ -104,7 +105,7 @@ module.exports = ({ db }) => {
 
       logger.info('File validated, saving file', hash);
 
-      const fileStat = await fsp.lstat(oldPath);
+      const fileStat = await fsp.lstat(oldPath, { bigInt: true });
 
       checkPath();
       const newPath = `${FILES_DIRECTORY}/${filename}`;
@@ -119,8 +120,27 @@ module.exports = ({ db }) => {
     if (noFile) resolve(null);
   });
 
+  const retrieveFileDetails = async (uid) => {
+    const fileData = db.get('files').get(uid).value();
+
+    if (!fileData) throw new CustomError(`No file associated with ${uid}`, StatusCodes.NOT_FOUND);
+
+    const { path, hash: previousHash, createdAt } = fileData;
+    await fsp.access(path).catch(() => { throw new CustomError(`No file on disk associated with ${uid}`, StatusCodes.NOT_FOUND); });
+
+    const [fileHash, { ino, birthtimeNs }] = await Promise.all([createFileHash(path), fsp.lstat(path, { bigInt: true })]);
+
+    logger.debug('Validating file', { uid, fileHash });
+    const hash = createHash(`${fileHash}-${createdAt}-${ino}-${birthtimeNs}`);
+
+    if (hash !== previousHash) throw new CustomError(`File ${uid} has been modified/replaced`, StatusCodes.INTERNAL_SERVER_ERROR);
+
+    return fileData;
+  };
+
   return {
     receiveFile,
     createFileHash,
+    retrieveFileDetails,
   };
 };

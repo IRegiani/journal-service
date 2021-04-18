@@ -20,9 +20,8 @@ const init = async () => {
     });
   } catch (error) {
     logger.error(`Error initializing Service: ${error.message}`, error);
-    await logger.flush();
 
-    process.exit(1);
+    process.exitCode = 1;
   }
 };
 

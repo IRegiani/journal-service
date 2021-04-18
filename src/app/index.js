@@ -9,9 +9,6 @@ const swagger = require('swagger-ui-express');
 const { StatusCodes } = require('http-status-codes');
 const StormDB = require('stormdb');
 
-// WIP Check https
-// TODO: Add second process later when processing or receiving videos, or webhooks
-
 // Router
 const IndexRouter = require('../routers/indexRouter');
 // const AuthorizationRouter = require('../routers/authorizationRouter');
@@ -79,7 +76,7 @@ class Service {
     // set default db value if db is empty
     this._db.default({ users: {}, journals: [], files: {}, tags: { entry: [], journal: [] } });
 
-    this.logger.info('Database connected successfully');
+    this.logger.info('Database ready');
     return this._db;
   }
 }
