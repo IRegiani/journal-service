@@ -13,6 +13,7 @@
     "lint": "eslint --config .eslintrc.js --ext .js ./src",
     "start": "node index.js",
     "local:watch": "nodemon index.js",
+    "serve": "NODE_ENV=production node index.js",
     "build": "pkg package.json --targets node14-win-x64 --output journal-service.exe"
   },
   "pkg": {

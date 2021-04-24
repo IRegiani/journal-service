@@ -12,11 +12,11 @@ const init = async () => {
     const service = new Service(logger, gitCommit);
     await service.init();
 
-    const port = config.get('server.port');
+    const { port, version } = config.get('server');
 
     service.listen(port, (error) => {
       if (error) throw error;
-      logger.success(`Service started 🚀 See routes at: http://localhost:${port}/documentation \n`);
+      logger.success(`Service started 🚀 See routes at: http://localhost:${port}${version}/documentation \n`);
     });
   } catch (error) {
     logger.error(`Error initializing Service: ${error.message}`, error);

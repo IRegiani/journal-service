@@ -2,12 +2,12 @@ const { StatusCodes } = require('http-status-codes');
 const { validate } = require('uuid');
 
 const logger = require('../utils/logger').initLogger({ name: 'JOURNAL CONTROLLER' });
-const { isIsoDateString } = require('../utils/validators');
+const { isIsoDateString, validateHeaders } = require('../utils/validators');
 const { CustomError, handleError, isExpectedError } = require('../utils/error')();
 
 module.exports = () => {
   const JournalController = {
-    async create(request, response, next) {
+    async createJournal(request, response, next) {
       const { body: { timestamp, entry, tags, entryTags }, user } = request;
       const { db } = response.locals;
 
@@ -15,6 +15,7 @@ module.exports = () => {
 
       try {
         logger.info('Creating journal entry');
+        validateHeaders(request);
 
         if (timestamp && !isIsoDateString(timestamp)) throw new CustomError('Invalid timestamp', StatusCodes.BAD_REQUEST);
 
@@ -35,11 +36,14 @@ module.exports = () => {
       const { db } = response.locals;
 
       const journalService = require('../services/journalService')({ db });
+      const entryService = require('../services/entryService')({ db });
       try {
         logger.info('Getting Journal');
 
         if (!validate(uid)) throw new CustomError('Invalid UID', StatusCodes.BAD_REQUEST);
         const journal = journalService.getJournal(uid);
+
+        entryService.validate(journal.entries);
 
         return response.status(StatusCodes.OK).json(journal);
       } catch (error) {
@@ -49,6 +53,7 @@ module.exports = () => {
       }
     },
 
+    // In order to other fields be validated early, the file should be the last field
     async addEntry(request, response, next) {
       const { body: { description, tags, fileEntry }, params: { uid } } = request;
       const { db } = response.locals;
@@ -59,6 +64,7 @@ module.exports = () => {
 
       try {
         logger.info('Creating entry');
+        validateHeaders(request, { 'content-type': 'multipart/form-data; boundary=' });
 
         if (!validate(uid)) throw new CustomError('Invalid UID', StatusCodes.BAD_REQUEST);
         const journal = journalService.getJournal(uid);
@@ -80,7 +86,7 @@ module.exports = () => {
       }
     },
 
-    async retrieveEntry(request, response, next) {
+    async retrieveEntries(request, response, next) {
       const { params: { uid } } = request;
       const { db } = response.locals;
 
@@ -96,6 +102,96 @@ module.exports = () => {
         const res = await entryService.retrieveEntriesDetails(entries);
 
         return response.status(StatusCodes.OK).json(res);
+      } catch (error) {
+        if (isExpectedError(error)) return handleError(response, error, logger);
+
+        return next(error);
+      }
+    },
+
+    async addAttachmentToEntry(request, response, next) {
+      const { params: { uid, index } } = request;
+      const { db } = response.locals;
+
+      const fileService = require('../services/fileService')({ db });
+      const entryService = require('../services/entryService')({ db });
+      const journalService = require('../services/journalService')({ db });
+
+      try {
+        logger.info('Adding attachment to entry', { index, uid });
+        validateHeaders(request, { 'Content-Type': 'multipart/form-data; boundary=' });
+
+        if (!validate(uid)) throw new CustomError('Invalid UID', StatusCodes.BAD_REQUEST);
+        if (!index) throw new CustomError('Missing entry index', StatusCodes.BAD_REQUEST);
+
+        const journal = journalService.getJournal(uid);
+
+        if (!journal.entries[index]) throw new CustomError('Invalid entry index', StatusCodes.NOT_FOUND);
+
+        const file = await fileService.receiveFile(request);
+
+        if (!file) throw new CustomError('Missing file', StatusCodes.BAD_REQUEST);
+
+        const updatedEntry = await entryService.addAttachment(index, journal, file);
+
+        logger.success('Entry updated with new attachment', { index, uid });
+
+        return response.status(StatusCodes.OK).json(updatedEntry);
+      } catch (error) {
+        if (isExpectedError(error, 'E_EXCEEDS_UPLOAD_LIMIT')) return handleError(response, error, logger);
+
+        return next(error);
+      }
+    },
+
+    async updateEntry(request, response, next) {
+      const { body: { tags }, params: { uid, index } } = request;
+      const { db } = response.locals;
+
+      const entryService = require('../services/entryService')({ db });
+      const journalService = require('../services/journalService')({ db });
+
+      try {
+        logger.info('Updating entry', { index, uid });
+        // https://tools.ietf.org/html/rfc7396
+        validateHeaders(request, { 'content-type': 'application/merge-patch+json' });
+
+        if (!validate(uid)) throw new CustomError('Invalid UID', StatusCodes.BAD_REQUEST);
+        if (!index) throw new CustomError('Missing entry index', StatusCodes.BAD_REQUEST);
+
+        const journal = journalService.getJournal(uid);
+
+        if (!journal.entries[index]) throw new CustomError('Invalid entry index', StatusCodes.NOT_FOUND);
+
+        const updatedEntry = await entryService.updateEntryTags(index, journal, tags);
+
+        logger.success('Entry updated', { index, uid });
+
+        return response.status(StatusCodes.OK).json(updatedEntry);
+      } catch (error) {
+        if (isExpectedError(error)) return handleError(response, error, logger);
+
+        return next(error);
+      }
+    },
+
+    async updateJournalEntry(request, response, next) {
+      const { body: { tags }, params: { uid } } = request;
+      const { db } = response.locals;
+
+      const journalService = require('../services/journalService')({ db });
+
+      try {
+        logger.info('Updating journal', { uid });
+        validateHeaders(request, { 'content-type': 'application/merge-patch+json' });
+
+        if (!validate(uid)) throw new CustomError('Invalid UID', StatusCodes.BAD_REQUEST);
+
+        const updatedJournal = await journalService.updateJournal(uid, tags);
+
+        logger.success('Journal updated', { uid });
+
+        return response.status(StatusCodes.OK).json(updatedJournal);
       } catch (error) {
         if (isExpectedError(error)) return handleError(response, error, logger);
 

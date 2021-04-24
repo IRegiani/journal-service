@@ -22,12 +22,9 @@ class Service {
     this.gitCommit = gitCommit;
     this.logger = logger;
     this.initDate = new Date().toISOString();
-    // this.pid = pid;
   }
 
   async init() {
-    // create log file?
-    // await this.logger.createFile();
     this._app = express();
 
     this._app.use(compression());
@@ -57,6 +54,7 @@ class Service {
 
     // eslint-disable-next-line no-unused-vars
     const errorHandler = (err, req, res, next) => {
+      console.log('error', err);
       this.logger.error(`Unhandled error in ${req.path}`, { method: req.method, path: req.path, err });
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: err.message });
     };

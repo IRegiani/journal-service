@@ -55,13 +55,13 @@ module.exports = ({ db }) => {
     db.get('files').set(uid, newEntry);
     await db.save();
 
-    logger.info('Attachment created', uid);
+    logger.info('File created uid:', uid);
     return newEntry;
   };
 
   const cleanTempFileAndReject = (reject, files) => (error) => {
     logger.warn('Cleaning temp files');
-    files.map(({ fd }) => fs.unlinkSync(fd));
+    files.map(({ fd }) => fs.unlink(fd));
     reject(error);
   };
 
@@ -69,10 +69,11 @@ module.exports = ({ db }) => {
     const startDate = new Date();
     const processFile = async (err, file) => {
       if (err) {
+        // This lefts partial file contents in the temp folder
+        if (err.message === 'Request aborted') return reject(new CustomError(`${err.message}\n`, StatusCodes.NO_CONTENT));
         if (err.code === 'E_EXCEEDS_UPLOAD_LIMIT') {
-          return reject(new CustomError(`File is larger than the allowed limit by ${err.written - MAX_FILE_BYTES} bytes`, StatusCodes.REQUEST_TOO_LONG, 'E_EXCEEDS_UPLOAD_LIMIT'));
+          return reject(new CustomError(`File is larger than the allowed limit by ${err.written - MAX_FILE_BYTES} bytes`, StatusCodes.REQUEST_TOO_LONG, err.code));
         }
-        // Aborted requests end up here
         return reject(err);
       }
 

@@ -1,6 +1,6 @@
 const { StatusCodes } = require('http-status-codes');
 
-const DEFAULT_ERROR_TYPE = 'DEFAULT_ERROR_TYPE';
+const DEFAULT_ERROR_TYPE = 'OPERATIONAL_ERROR_TYPE';
 
 class CustomError extends Error {
   constructor(message, responseCode, type) {
@@ -11,6 +11,7 @@ class CustomError extends Error {
   }
 }
 
+// Most likely, this is an Operational Error
 const handleError = (response, error, logger, showErrorStack = false) => {
   const { responseCode, message } = error;
   const errorToLog = showErrorStack ? error : undefined;

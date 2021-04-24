@@ -1,14 +1,21 @@
-module.exports = () => {
-  const JournalRouter = require('express').Router();
-  const JournalController = require('../controllers/journalController')();
+const JournalRouter = require('express').Router();
+const JournalController = require('../controllers/journalController')();
 
+module.exports = () => {
   // JournalRouter.use('/journal', AuthorizationController.authorize);
 
-  JournalRouter.route('/journal').post(JournalController.create);
-  JournalRouter.route('/journal:uid').get(JournalController.retrieve);
+  JournalRouter.route('/journal')
+    .post(JournalController.createJournal);
+  JournalRouter.route('/journal/:uid')
+    .get(JournalController.retrieve)
+    .patch(JournalController.updateJournalEntry);
+  JournalRouter.route('/journal/:uid/entry/:index/attachment')
+    .post(JournalController.addAttachmentToEntry);
+  JournalRouter.route('/journal/:uid/entry/:index')
+    .patch(JournalController.updateEntry);
   JournalRouter.route('/journal/:uid/entry')
     .put(JournalController.addEntry)
-    .get(JournalController.retrieveEntry);
+    .get(JournalController.retrieveEntries);
 
   return JournalRouter;
 };
