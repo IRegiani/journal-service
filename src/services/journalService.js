@@ -16,6 +16,12 @@ module.exports = ({ db }) => {
     return journal;
   };
 
+  const getJournalsByTag = (tag) => db.get('journals').value().filter((journal) => journal.tags?.includes(tag));
+
+  const getJournalsByEntriesTag = (tag) => db.get('journals').value().filter(
+    (journal) => journal.entries?.filter((entry) => entry.tags.includes(tag)),
+  );
+
   const addEntryJournalHistory = (journal, entry) => {
     const fileUid = entry?.fileUids && entry.fileUids.length === 1 && entry.fileUids[0];
     const fileDate = fileUid ? db.get('files').get(fileUid).value().createdAt : undefined;
@@ -59,6 +65,40 @@ module.exports = ({ db }) => {
     logger.info(`Updated entry ${index} in journal`, { uid, index });
 
     return journal;
+  };
+
+  const updateBatchEntriesByTag = async (tag) => {
+    const journalsUidsToUpdate = getJournalsByEntriesTag(tag).map((journal) => journal.uid);
+    const allJournals = db.get('journals').value();
+
+    logger.info(`Got ${journalsUidsToUpdate.length} journals containing the tag ${tag} on its entries, updating`, { journalsUidsToUpdate });
+
+    const at = new Date().toISOString();
+    allJournals.forEach((journal, journalIndex) => {
+      if (journalsUidsToUpdate.includes(journal.uid)) {
+        const updatedIndexes = [];
+        journal.entries.forEach((entry, index) => {
+          if (entry.tags.includes(tag)) {
+            updatedIndexes.push(index);
+            allJournals[journalIndex].entries[index] = entry.tags.filter((tags) => tags !== tag);
+          }
+        });
+
+        const history = {
+          at,
+          type: UPDATE_TYPES.modifiedTag,
+          relatedIndex: updatedIndexes.length === 1 ? updatedIndexes[0] : undefined,
+          relatedIndexes: updatedIndexes.length === 1 ? undefined : updatedIndexes,
+        };
+
+        allJournals[journalIndex].updateHistory = addNewItemOrCreateArray(journal.updateHistory, history);
+        logger.debug(`Updated entry(ies) ${updatedIndexes} in journal`, { uid: journal.uid });
+      }
+    });
+
+    await db.get('journals').set(allJournals).save();
+
+    return journalsUidsToUpdate;
   };
 
   const updateJournal = async (uid, tags) => {
@@ -105,9 +145,11 @@ module.exports = ({ db }) => {
 
   return {
     getJournal,
+    getJournalsByTag,
     addEntry,
     updateEntry,
     updateJournal,
     createJournalEntry,
+    updateBatchEntriesByTag,
   };
 };

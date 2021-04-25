@@ -3,15 +3,11 @@ const requestContext = require('express-http-context');
 const logger = require('../utils/logger').initLogger({ name: 'REQUEST INTERCEPTOR' });
 
 module.exports = () => {
-  const beforeRequest = (request) => {
+  const beforeRequest = () => {
     // WIP: request context is undefined when no file is sent
     // console.log('here, before!');
     const reqId = Math.random().toString(36).substr(2, 9);
-    // TODO: This should go to authentication controller/service
-    const { username } = request.body;
-
     requestContext.set('reqId', reqId);
-    requestContext.set('username', username);
     requestContext.set('initTime', Date.now());
     // console.log('requestContext', requestContext.get('initTime'));
     // requestContext.set('forwardList', request.get('X-Forwarded-For'));

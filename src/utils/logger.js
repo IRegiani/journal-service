@@ -57,7 +57,7 @@ const createLogPrefixAndSuffix = (metadata, shouldShowMetadata, extraSuffix) => 
 
 const handleLog = (level, shouldShowMetadata, name) => (message, metadata, extraSuffix) => {
   const { prefix: { username, reqId }, suffix } = createLogPrefixAndSuffix(metadata, shouldShowMetadata, extraSuffix);
-  const prefixToLog = `[${reqId ? ` reqId: ${reqId} - ${username} ` : ''}]`;
+  const prefixToLog = `[${reqId ? ` reqId: ${reqId} - user: ${username} ` : ''}]`;
 
   formatter.scope(name)[level]({ message, prefix: prefixToLog, suffix });
 };
@@ -66,6 +66,7 @@ const initLogger = ({ name, verbose }) => {
   const shouldShowMetadata = typeof verbose === 'undefined' ? config.get('logger.verbose') : verbose;
 
   const logger = levels.reduce((finalLogger, level) => ({ ...finalLogger, [level]: handleLog(level, shouldShowMetadata, name) }), {});
+  if (!config.get('logger.debug')) logger.debug = () => { };
 
   return logger;
 };

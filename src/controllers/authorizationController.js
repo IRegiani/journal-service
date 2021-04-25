@@ -1,5 +1,7 @@
 const { StatusCodes } = require('http-status-codes');
-const logger = require('../utils/logger').initLogger({ name: 'LOGIN CONTROLLER' });
+const requestContext = require('express-http-context');
+
+const logger = require('../utils/logger').initLogger({ name: 'AUTHORIZATION CONTROLLER' });
 const { CustomError, handleError, isExpectedError } = require('../utils/error')();
 
 module.exports = () => {
@@ -26,6 +28,22 @@ module.exports = () => {
         await doc.update({ entries: newEntry });
 
         return response.json({ message: 'Success', logins: newEntry });
+      } catch (error) {
+        if (isExpectedError(error)) return handleError(response, error, logger);
+
+        return next(error);
+      }
+    },
+
+    async authorize(request, response, next) {
+      try {
+        logger.info('Checking authorization');
+
+        const username = 'dummy-user';
+        request.user = { username, uid: 'bac41e52-46a8-4d93-b700-15eb75e90a24' };
+        requestContext.set('username', username);
+
+        return next();
       } catch (error) {
         if (isExpectedError(error)) return handleError(response, error, logger);
 

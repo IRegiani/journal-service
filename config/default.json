@@ -5,6 +5,7 @@
   },
   "logger": {
     "verbose": true,
+    "debug": true,
     "writeToFile": false
   },
   "server": {

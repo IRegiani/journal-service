@@ -13,6 +13,7 @@ const StormDB = require('stormdb');
 const IndexRouter = require('../routers/indexRouter');
 // const AuthorizationRouter = require('../routers/authorizationRouter');
 const JournalRouter = require('../routers/journalRouter');
+const TagRouter = require('../routers/tagRouter');
 
 // Interceptors
 const RequestInterceptor = require('../interceptors/request');
@@ -48,18 +49,19 @@ class Service {
     this._app.use(apiVersion, IndexRouter(initConfig));
     // this._app.use(AuthorizationRouter());
     this._app.use(apiVersion, JournalRouter());
+    this._app.use(apiVersion, TagRouter());
 
     const swaggerContent = require('../swagger')();
     this._app.use(`${apiVersion}/documentation`, swagger.serve, swagger.setup(swaggerContent));
 
     // eslint-disable-next-line no-unused-vars
     const errorHandler = (err, req, res, next) => {
-      console.log('error', err);
       this.logger.error(`Unhandled error in ${req.path}`, { method: req.method, path: req.path, err });
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: err.message });
     };
 
     this._app.use(errorHandler);
+    this._app.use((req, res) => res.status(StatusCodes.NOT_FOUND).json({ message: 'Route not found' }));
   }
 
   async listen(...params) {

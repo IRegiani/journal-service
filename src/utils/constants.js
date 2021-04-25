@@ -15,6 +15,11 @@ module.exports = {
 
   MAX_JOURNAL_UPDATE_TIMEOUT: 5,
 
+  TAG_TYPES: {
+    journal: 'journal',
+    entry: 'entry',
+  },
+
   UPDATE_TYPES: {
     addedEntry: 'ADDED_ENTRY',
     addedFile: 'ADDED_FILE',
