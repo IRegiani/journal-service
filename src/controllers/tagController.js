@@ -105,13 +105,13 @@ module.exports = () => {
       const tagService = require('../services/tagService')({ db });
 
       try {
-        logger.info(`Deleting ${type} tag ${tag}`);
+        logger.info(`Deleting ${type} tag ${tag}`, { type, tag });
 
-        await tagService.deleteTag(user.uid, type, tag);
+        const res = await tagService.deleteTag(user.uid, type, tag);
 
         logger.success(`Deleted ${type} tag ${tag} successfully`);
 
-        return response.status(StatusCodes.NO_CONTENT).send();
+        return response.status(StatusCodes.OK).json(res);
       } catch (error) {
         if (isExpectedError(error)) return handleError(response, error, logger);
 

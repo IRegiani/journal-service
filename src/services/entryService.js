@@ -11,7 +11,7 @@ module.exports = (options) => {
   const journalService = require('./journalService')(options);
   const fileService = require('./fileService')(options);
 
-  const getHashForEntry = (entry) => createHash(`${entry.description}${entry.fileUid}${entry.createdAt}`);
+  const getHashForEntry = (entry) => createHash(`${entry.description}${entry.fileUids}${entry.createdAt}`);
 
   const addAttachment = async (index, journal, file) => {
     const updatedEntry = { ...journal.entries[index] };
@@ -27,7 +27,7 @@ module.exports = (options) => {
     return updatedEntry;
   };
 
-  const createEntry = async (currentDate = new Date().toISOString(), description, entryTags, fileUid, fileEntry) => {
+  const createEntry = (currentDate = new Date().toISOString(), description, entryTags, fileUid, fileEntry) => {
     const tags = tagService.getValidatedEntryTags([], entryTags);
 
     if (!description && !fileUid) return undefined;
@@ -52,7 +52,7 @@ module.exports = (options) => {
 
     logger.debug(`Creating entry to journal ${journal.uid} ${willReceiveNewDate ? 'with new date' : `dating ${journal.createdAt}`}`);
 
-    const newEntry = await createEntry(date, description, tags, file?.uid, fileEntry);
+    const newEntry = createEntry(date, description, tags, file?.uid, fileEntry);
     const updatedJournal = await journalService.addEntry(journal.uid, newEntry);
 
     return updatedJournal;
@@ -84,7 +84,7 @@ module.exports = (options) => {
     }));
   };
 
-  const updateTags = async (index, journal, tags) => {
+  const updateEntryTags = async (index, journal, tags) => {
     const entry = journal.entries[index];
     validate([entry]);
 
@@ -93,9 +93,9 @@ module.exports = (options) => {
     const updatedTags = tagService.getValidatedEntryTags(currentTags, tags);
     const newEntry = { ...entry, tags: updatedTags };
 
-    const result = await journalService.updateEntry(index, journal.uid, newEntry).entries[index];
+    const updatedJournal = await journalService.updateEntry(index, journal.uid, newEntry);
 
-    return result;
+    return updatedJournal.entries[index];
   };
 
   return {
@@ -104,6 +104,6 @@ module.exports = (options) => {
     createAndSaveEntry,
     retrieveEntriesDetails,
     addAttachment,
-    updateTags,
+    updateEntryTags,
   };
 };

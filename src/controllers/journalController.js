@@ -19,7 +19,7 @@ module.exports = () => {
 
         if (timestamp && !isIsoDateString(timestamp)) throw new CustomError('Invalid timestamp', StatusCodes.BAD_REQUEST);
 
-        const journal = await journalService.createJournalEntry(timestamp, entry, entryTags, tags, user);
+        const journal = await journalService.createJournalEntry(timestamp, entry, entryTags, tags, user.uid);
 
         logger.success('Journal created successfully', { journalUid: journal.uid });
 
@@ -38,7 +38,7 @@ module.exports = () => {
       const journalService = require('../services/journalService')({ db });
       const entryService = require('../services/entryService')({ db });
       try {
-        logger.info('Getting Journal');
+        logger.info('Getting Journal', { uid });
 
         if (!validate(uid)) throw new CustomError('Invalid UID', StatusCodes.BAD_REQUEST);
         const journal = journalService.getJournal(uid);
@@ -61,12 +61,14 @@ module.exports = () => {
       const fileService = require('../services/fileService')({ db });
       const entryService = require('../services/entryService')({ db });
       const journalService = require('../services/journalService')({ db });
+      const tagService = require('../services/tagService')({ db });
 
       try {
         logger.info('Creating entry');
         validateHeaders(request, { 'content-type': 'multipart/form-data; boundary=' });
 
         if (!validate(uid)) throw new CustomError('Invalid UID', StatusCodes.BAD_REQUEST);
+        tagService.getValidatedEntryTags([], tags);
         const journal = journalService.getJournal(uid);
         const file = await fileService.receiveFile(request);
 
@@ -119,13 +121,13 @@ module.exports = () => {
 
       try {
         logger.info('Adding attachment to entry', { index, uid });
-        validateHeaders(request, { 'Content-Type': 'multipart/form-data; boundary=' });
+        validateHeaders(request, { 'content-type': 'multipart/form-data; boundary=' });
 
         if (!validate(uid)) throw new CustomError('Invalid UID', StatusCodes.BAD_REQUEST);
         if (!index) throw new CustomError('Missing entry index', StatusCodes.BAD_REQUEST);
 
         const journal = journalService.getJournal(uid);
-
+        if (!journal.entries) throw new CustomError('Journal has no entries', StatusCodes.BAD_REQUEST);
         if (!journal.entries[index]) throw new CustomError('Invalid entry index', StatusCodes.NOT_FOUND);
 
         const file = await fileService.receiveFile(request);
@@ -144,6 +146,7 @@ module.exports = () => {
       }
     },
 
+    // The only field that can be updated is tags
     async updateEntry(request, response, next) {
       const { body: { tags }, params: { uid, index } } = request;
       const { db } = response.locals;
@@ -152,15 +155,17 @@ module.exports = () => {
       const journalService = require('../services/journalService')({ db });
 
       try {
-        logger.info('Updating entry', { index, uid });
+        logger.info('Updating entry', { index, uid, tags });
         // https://tools.ietf.org/html/rfc7396
         validateHeaders(request, { 'content-type': 'application/merge-patch+json' });
 
         if (!validate(uid)) throw new CustomError('Invalid UID', StatusCodes.BAD_REQUEST);
         if (!index) throw new CustomError('Missing entry index', StatusCodes.BAD_REQUEST);
+        if (tags === undefined) throw new CustomError('Missing tag property', StatusCodes.BAD_REQUEST);
 
         const journal = journalService.getJournal(uid);
 
+        if (!journal.entries) throw new CustomError('Journal has no entries', StatusCodes.NOT_FOUND);
         if (!journal.entries[index]) throw new CustomError('Invalid entry index', StatusCodes.NOT_FOUND);
 
         const updatedEntry = await entryService.updateEntryTags(index, journal, tags);
@@ -182,10 +187,11 @@ module.exports = () => {
       const journalService = require('../services/journalService')({ db });
 
       try {
-        logger.info('Updating journal', { uid });
+        logger.info('Updating journal', { uid, tags });
         validateHeaders(request, { 'content-type': 'application/merge-patch+json' });
 
         if (!validate(uid)) throw new CustomError('Invalid UID', StatusCodes.BAD_REQUEST);
+        if (tags === undefined) throw new CustomError('Missing tag property', StatusCodes.BAD_REQUEST);
 
         const updatedJournal = await journalService.updateJournal(uid, tags);
 

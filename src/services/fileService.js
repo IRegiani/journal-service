@@ -61,7 +61,7 @@ module.exports = ({ db }) => {
 
   const cleanTempFileAndReject = (reject, files) => (error) => {
     logger.warn('Cleaning temp files');
-    files.map(({ fd }) => fs.unlink(fd));
+    files.map(({ fd }) => fs.unlink(fd, (err, message) => logger.debug('Cleared temp files', { err, message })));
     reject(error);
   };
 

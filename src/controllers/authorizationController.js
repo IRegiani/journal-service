@@ -37,7 +37,7 @@ module.exports = () => {
 
     async authorize(request, response, next) {
       try {
-        logger.info('Checking authorization');
+        logger.debug('Checking authorization');
 
         const username = 'dummy-user';
         request.user = { username, uid: 'bac41e52-46a8-4d93-b700-15eb75e90a24' };

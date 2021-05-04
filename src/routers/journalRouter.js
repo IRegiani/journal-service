@@ -1,8 +1,9 @@
 const JournalRouter = require('express').Router();
 const JournalController = require('../controllers/journalController')();
+const AuthorizationController = require('../controllers/authorizationController')();
 
 module.exports = () => {
-  // JournalRouter.use('/journal', AuthorizationController.authorize);
+  JournalRouter.use('/journal', AuthorizationController.authorize);
 
   JournalRouter.route('/journal')
     .post(JournalController.createJournal);
