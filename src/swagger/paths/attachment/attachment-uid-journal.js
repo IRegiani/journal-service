@@ -2,7 +2,7 @@ module.exports = () => {
   const journalSmallEntries = require('../../components/journal')(); // TODO
   const { pathParameters } = require('../../parameters')();
   const { createMessage } = require('../../helpers/messages');
-  const notFoundMessage = 'No attachtment found';
+  const notFoundMessage = 'No attachment found';
 
   return {
     get: {

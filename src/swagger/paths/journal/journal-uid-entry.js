@@ -1,6 +1,6 @@
 module.exports = () => {
   const journalEntry = require('../../components/journal')();
-  const { pathParameters } = require('../../parameters')();
+  const { pathParameters, headerParameters } = require('../../parameters')();
   const { createMessage } = require('../../helpers/messages');
   const notFoundMessage = 'No journal found';
   const fileExists = 'Attachment already exists on this journal';
@@ -10,7 +10,7 @@ module.exports = () => {
       tags: ['Journal'],
       summary: 'Creates a new entry into a journal',
       operationId: 'attachToJournal',
-      parameters: [pathParameters.uid],
+      parameters: [pathParameters.uid, headerParameters.lastModified],
       // WIP: add request body
       responses: {
         200: {
@@ -30,7 +30,7 @@ module.exports = () => {
     get: {
       tags: ['Journal'],
       summary: 'Get attachment details from a journal entry',
-      operationId: 'attachmentDetailsFromJounal',
+      operationId: 'attachmentDetailsFromJournal',
       parameters: [pathParameters.uid],
     },
   };

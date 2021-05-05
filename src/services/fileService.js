@@ -101,7 +101,7 @@ module.exports = ({ db }) => {
       const isNotUnique = verifyFileName(filename);
       if (isNotUnique) return rejectError(isNotUnique);
 
-      const lastModified = request.headers['Last-Modified'];
+      const lastModified = request.headers['last-modified'];
       const originalDate = isIsoDateString(lastModified) ? lastModified : undefined;
 
       logger.debug('File validated, saving file', hash);

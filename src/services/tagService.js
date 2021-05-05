@@ -67,6 +67,7 @@ module.exports = (options = {}) => {
   };
 
   const updateTag = async (userUid, tagType, tagName, fields) => {
+    const journalService = require('./journalService')({ db });
     const tag = getTag(userUid, tagType, tagName);
 
     if (fields.name) {
@@ -74,19 +75,21 @@ module.exports = (options = {}) => {
       if (hasTag) throw new CustomError(`${tagType} tag ${tagName} already exists`, StatusCodes.CONFLICT);
     }
 
+    // WIP: test to '' fields.name === null || fields.name === ''
     if (fields.name === null) throw new CustomError('Tag name cannot be null', StatusCodes.BAD_REQUEST);
 
     const newTag = updateProperties(tag, fields, ['name', 'color', 'description']);
     const index = getTagsFromDB(tagType).indexOf(tag);
 
-    logger.debug(`Tag on index ${index} is being updated`, { name: tagName });
+    logger.debug('Tag index is being updated', { name: tagName, tagType, index });
+    let modifiedJournals;
 
-    // WIP: every entry/journal with this tag should be updated as well
+    if (fields.name) modifiedJournals = await journalService.updateTagFromEntriesAndJournalsBatch(tag, fields.name, tagType);
 
     await db.get('tags').get(tagType).get(index).set(newTag)
       .save();
 
-    return newTag;
+    return { updatedTag: newTag, modifiedJournals };
   };
 
   const deleteTag = async (userUid, tagType, tagName) => {
@@ -96,6 +99,7 @@ module.exports = (options = {}) => {
     logger.debug(`Tag ${tagName} is being removed`, { name: tagName });
     db.get('tags').get(tagType).filter((tag) => tag.name !== tagToDelete.name);
 
+    // WIP: refactor this
     if (tagType === TAG_TYPES.journal) {
       const journals = journalService.getJournalsByTag(tagToDelete.name);
       const journalUids = journals.map((journal) => journal.uid);
@@ -107,7 +111,6 @@ module.exports = (options = {}) => {
       return { journalUids };
     }
     const journalUids = await journalService.removeTagFromEntriesBatch(tagToDelete.name);
-    // await db.save();
     return { journalUids };
   };
 

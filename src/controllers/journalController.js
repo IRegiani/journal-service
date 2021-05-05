@@ -180,6 +180,7 @@ module.exports = () => {
       }
     },
 
+    // The only field that can be updated is tags
     async updateJournalEntry(request, response, next) {
       const { body: { tags }, params: { uid } } = request;
       const { db } = response.locals;

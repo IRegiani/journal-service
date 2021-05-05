@@ -14,6 +14,7 @@ const IndexRouter = require('../routers/indexRouter');
 // const AuthorizationRouter = require('../routers/authorizationRouter');
 const JournalRouter = require('../routers/journalRouter');
 const TagRouter = require('../routers/tagRouter');
+const StatisticsRouter = require('../routers/statisticsRouter');
 
 // Interceptors
 const RequestInterceptor = require('../interceptors/request');
@@ -36,23 +37,25 @@ class Service {
     this._app.use(requestContext.middleware);
     this._app.set('trust proxy', true);
 
-    // add db instance as middleware
+    // add db instance in the response
     const databaseInstance = await this.startDB();
     this._app.use((request, response, next) => { response.locals.db = databaseInstance; next(); });
 
     this._app.use(RequestInterceptor());
     this._app.use(skipper());
 
-    // Routers
     const initConfig = { gitCommit: this.gitCommit, initDate: this.initDate };
     const apiVersion = config.get('server.version');
+
+    // Routers
     this._app.use(apiVersion, IndexRouter(initConfig));
     // this._app.use(AuthorizationRouter());
     this._app.use(apiVersion, JournalRouter());
     this._app.use(apiVersion, TagRouter());
+    this._app.use(apiVersion, StatisticsRouter(initConfig));
 
     const swaggerContent = require('../swagger')();
-    this._app.use(`${apiVersion}/documentation`, swagger.serve, swagger.setup(swaggerContent));
+    this._app.use(`${apiVersion}/documentation`, swagger.serve, swagger.setup(swaggerContent, { explorer: true }));
 
     // eslint-disable-next-line no-unused-vars
     const errorHandler = (err, req, res, next) => {
