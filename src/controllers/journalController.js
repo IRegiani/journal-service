@@ -1,5 +1,6 @@
 const { StatusCodes } = require('http-status-codes');
 const { validate } = require('uuid');
+const { isFuture } = require('date-fns');
 
 const logger = require('../utils/logger').initLogger({ name: 'JOURNAL CONTROLLER' });
 const { isIsoDateString, validateHeaders } = require('../utils/validators');
@@ -17,7 +18,8 @@ module.exports = () => {
         logger.info('Creating journal entry');
         validateHeaders(request);
 
-        if (timestamp && !isIsoDateString(timestamp)) throw new CustomError('Invalid timestamp', StatusCodes.BAD_REQUEST);
+        if (!timestamp || !isIsoDateString(timestamp)) throw new CustomError('Invalid or missing timestamp', StatusCodes.BAD_REQUEST);
+        if (isFuture(new Date(timestamp))) throw new CustomError('Not allowed future timestamp', StatusCodes.BAD_REQUEST);
 
         const journal = await journalService.createJournalEntry(timestamp, entry, entryTags, tags, user.uid);
 
@@ -72,8 +74,10 @@ module.exports = () => {
         const journal = journalService.getJournal(uid);
         const file = await fileService.receiveFile(request);
 
-        if (!(description || file)) throw new CustomError('Missing entry body', StatusCodes.BAD_REQUEST);
+        if (!(description || file)) throw new CustomError('Missing entry file or description', StatusCodes.BAD_REQUEST);
         if (fileEntry && !file) throw new CustomError('File is required when using *fileEntry*', StatusCodes.BAD_REQUEST);
+        // TODO: Clean saved file, test error flow
+        if (fileEntry && file && !file.type.includes('video')) throw new CustomError('Only a video file can be an fileEntry', StatusCodes.BAD_REQUEST);
 
         const entry = await entryService.createAndSaveEntry(journal, description, file, fileEntry, tags);
 
@@ -130,6 +134,7 @@ module.exports = () => {
         if (!journal.entries) throw new CustomError('Journal has no entries', StatusCodes.BAD_REQUEST);
         if (!journal.entries[index]) throw new CustomError('Invalid entry index', StatusCodes.NOT_FOUND);
 
+        entryService.validate([journal.entries[index]]);
         const file = await fileService.receiveFile(request);
 
         if (!file) throw new CustomError('Missing file', StatusCodes.BAD_REQUEST);

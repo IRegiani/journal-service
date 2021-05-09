@@ -1,5 +1,6 @@
 module.exports = {
   FILE_EXTENSIONS: ['mp4', 'mkv', 'pdf', 'txt', 'mp3', 'docx', 'png', 'jpg', 'docx'],
+  // TODO: Check access to other directories, including non existent ones
   FILES_DIRECTORY: './files',
   FILE_TYPES: [
     'text/plain',
@@ -24,5 +25,14 @@ module.exports = {
     addedEntry: 'ADDED_ENTRY',
     addedFile: 'ADDED_FILE',
     modifiedTag: 'MODIFIED_TAG',
+  },
+
+  CUSTOM_RESPONSES: {
+    CODES: {
+      hashValidation: 530,
+    },
+    DESCRIPTION: {
+      530: 'Hash validation failed. The requested resource was modified by a third party',
+    },
   },
 };

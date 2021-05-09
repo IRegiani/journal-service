@@ -33,7 +33,8 @@ module.exports = (options = {}) => {
   };
 
   const getValidatedTags = (currentTags, tags, tagType) => {
-    if (!currentTags) throw new CustomError('No tags to update', StatusCodes.BAD_REQUEST);
+    // WIP: This should be reviewed, patch should create?
+    if (!currentTags) throw new CustomError('No tags to update, create one first', StatusCodes.BAD_REQUEST);
 
     // when removing tags by setting them as null, empty array or creating an empty tag fo journal/entry
     if (tags === null || (!tags && currentTags.length === 0) || tags.length === 0) {
@@ -82,14 +83,16 @@ module.exports = (options = {}) => {
     const index = getTagsFromDB(tagType).indexOf(tag);
 
     logger.debug('Tag index is being updated', { name: tagName, tagType, index });
-    let modifiedJournals;
+    let modifiedEntities;
 
-    if (fields.name) modifiedJournals = await journalService.updateTagFromEntriesAndJournalsBatch(tag, fields.name, tagType);
+    if (fields.name) modifiedEntities = await journalService.updateTagFromEntriesAndJournalsBatch(tag, fields.name, tagType);
 
     await db.get('tags').get(tagType).get(index).set(newTag)
       .save();
 
-    return { updatedTag: newTag, modifiedJournals };
+    // this wouldn't be accurate if the constant is changed... but its fine
+    const upperCaseName = `modified${tagType === TAG_TYPES.journal ? 'JournalsAndEntries' : 'Entries'}`;
+    return { tag: newTag, [upperCaseName]: modifiedEntities };
   };
 
   const deleteTag = async (userUid, tagType, tagName) => {

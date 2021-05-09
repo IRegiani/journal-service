@@ -16,7 +16,7 @@ module.exports = () => {
   JournalRouter.route('/journal/:uid/entry/:index')
     .patch(JournalController.updateEntry);
   JournalRouter.route('/journal/:uid/entry')
-    .put(JournalController.addEntry)
+    .post(JournalController.addEntry)
     .get(JournalController.retrieveEntries);
 
   return JournalRouter;

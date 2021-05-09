@@ -1,37 +1,54 @@
-const attachments = require('./attachment')();
-const entries = require('./entry')();
+const { getObjectWithoutKeys } = require('../../utils/utils');
+const entry = require('./entry')();
 const tags = require('./tags')();
 
-const journal = {
+const fullJournal = {
   schema: {
     type: 'object',
     properties: {
-      entries: {
-        type: 'array',
-        items: entries,
+      uid: {
+        type: 'string',
+        format: 'uuid',
+        example: '37d7095d-dfe3-4aea-8f71-9afc1d244050',
       },
       timestamp: {
         type: 'string',
         format: 'date-time',
+        example: '2021-05-08T23:56:15.585Z',
       },
       createdAt: {
         type: 'string',
         format: 'date-time',
+        example: '2021-05-08T23:56:15.585Z',
       },
-      uid: {
+      author: {
         type: 'string',
         format: 'uuid',
-      },
-      hash: {
-        type: 'string',
+        example: '76aad0f8-5ac8-4028-b148-827551af23f7',
       },
       tags,
-      attachments: {
+      entries: {
         type: 'array',
-        items: attachments,
+        items: entry,
       },
     },
   },
 };
 
-module.exports = () => journal;
+const basicJournal = {
+  schema: {
+    type: 'object',
+    properties: {
+      ...fullJournal.schema.properties,
+      entries: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: getObjectWithoutKeys(entry.properties, ['fileUids', 'fileEntry']),
+        },
+      },
+    },
+  },
+};
+
+module.exports = () => ({ fullJournal, basicJournal });

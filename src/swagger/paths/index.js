@@ -1,18 +1,17 @@
 module.exports = () => ({
   // '/login': require('./authorization/login')(),
 
-  // WIP
+  // TODO: Add search query params to this endpoint
   '/journal': require('./journal/journal')(),
   '/journal/{uid}': require('./journal/journal-uid')(),
   '/journal/{uid}/entry': require('./journal/journal-uid-entry')(),
-  '/journal/{uid}/entry/{index}': require('./journal/journal-uid-entry')(),
-  '/journal/{uid}/entry/{index}/attachment': require('./journal/journal-uid-entry')(),
+  '/journal/{uid}/entry/{index}': require('./journal/journal-uid-entry-index')(),
+  '/journal/{uid}/entry/{index}/attachment': require('./journal/journal-uid-entry-index-attachment')(),
 
-  '/tag/{type}': require('./tag/index')(),
-  '/tag/{type}/{tag}': require('./tag/index')(),
+  '/tag/{type}': require('./tag/tag-type')(),
+  '/tag/{type}/{tag}': require('./tag/tag-type-tag')(),
 
-  // '/attachment/{uid}/journal': require('./attachment/attachment-uid-journal')(),
-  // POST '/attachment': require('./attachment/attachment')(), // should receive and attach to journal/entry
+  // '/file/{uid}': require('./attachment/attachment-uid-journal')(),
 
   // '/statistics': require()(),
 });

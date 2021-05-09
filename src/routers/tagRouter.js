@@ -6,7 +6,7 @@ module.exports = () => {
   TagRouter.use('/tag', AuthorizationController.authorize);
 
   TagRouter.route('/tag/:type')
-    .get(TagController.getTags)
+    .get(TagController.listTags)
     .post(TagController.createTag);
 
   TagRouter.route('/tag/:type/:tag')

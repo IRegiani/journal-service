@@ -1,9 +1,8 @@
 const { differenceInSeconds } = require('date-fns');
-const { StatusCodes } = require('http-status-codes');
 
 const { createHash, getObjectKeys } = require('../utils/utils');
 const logger = require('../utils/logger').initLogger({ name: 'ENTRY SERVICE' });
-const { MAX_JOURNAL_UPDATE_TIMEOUT } = require('../utils/constants');
+const { MAX_JOURNAL_UPDATE_TIMEOUT, CUSTOM_RESPONSES } = require('../utils/constants');
 const { CustomError } = require('../utils/error')();
 
 module.exports = (options) => {
@@ -37,7 +36,7 @@ module.exports = (options) => {
       description,
       createdAt: currentDate,
       fileUids: fileUid && [fileUid],
-      fileEntry: fileEntry && fileUid,
+      fileEntry: fileEntry ? fileUid : undefined,
       tags,
     };
     entry.hash = getHashForEntry(entry);
@@ -53,31 +52,31 @@ module.exports = (options) => {
     logger.debug(`Creating entry to journal ${journal.uid} ${willReceiveNewDate ? 'with new date' : `dating ${journal.createdAt}`}`);
 
     const newEntry = createEntry(date, description, tags, file?.uid, fileEntry);
-    const updatedJournal = await journalService.addEntry(journal.uid, newEntry);
+    await journalService.addEntry(journal.uid, newEntry);
 
-    return updatedJournal;
+    return newEntry;
   };
 
   const validate = (entries = []) => {
     logger.debug(`Validating ${entries.length} entries`);
     const hasInvalidEntry = entries.some((entry) => entry.hash !== getHashForEntry(entry));
-    if (hasInvalidEntry) throw new CustomError('Entry has been modified/replaced', StatusCodes.INTERNAL_SERVER_ERROR);
+    if (hasInvalidEntry) throw new CustomError('Entry has been modified/replaced', CUSTOM_RESPONSES.CODES.hashValidation);
   };
 
   const retrieveEntriesDetails = async (entries) => {
     validate(entries);
 
     const fileUids = entries.filter((entry) => entry.fileUids).map((ety) => ety.fileUids).flat();
-    // it's an array entries, with an array of files. Beware, not all entry has a file
+    // it's an array of entries, with an array of fileUids. Beware, not all entry has a file
     const fileList = await Promise.all(fileUids.map(fileService.retrieveFileDetails));
 
-    const fileKeys = ['uid', 'size', 'type', 'createdAt'];
-    const filesWithUid = fileList.reduce((obj, file) => ({ ...obj, [file.uid]: getObjectKeys(fileKeys, file) }), {});
+    const fileKeys = ['uid', 'size', 'type', 'createdAt', 'originalDate'];
+    const filesWithUid = fileList.reduce((obj, file) => ({ ...obj, [file.uid]: getObjectKeys(file, fileKeys) }), {});
 
     return entries.map(({ createdAt, tags, hash, description, fileEntry }, index) => ({
       description,
       createdAt,
-      files: entries[index].fileUids && getObjectKeys(entries[index].fileUids, filesWithUid),
+      files: entries[index].fileUids && getObjectKeys(filesWithUid, entries[index].fileUids),
       fileEntry,
       tags,
       hash,

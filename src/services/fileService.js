@@ -7,7 +7,7 @@ const { v4: generateUid } = require('uuid');
 
 const logger = require('../utils/logger').initLogger({ name: 'FILE SERVICE' });
 const { CustomError } = require('../utils/error')();
-const { FILE_EXTENSIONS, FILE_TYPES, FILES_DIRECTORY, MAX_FILE_BYTES } = require('../utils/constants');
+const { FILE_EXTENSIONS, FILE_TYPES, FILES_DIRECTORY, MAX_FILE_BYTES, CUSTOM_RESPONSES } = require('../utils/constants');
 const { createHash, getFileName } = require('../utils/utils');
 const { isIsoDateString } = require('../utils/validators');
 
@@ -33,8 +33,8 @@ module.exports = ({ db }) => {
   const validateFileMetadata = ({ filename, type }) => {
     const fileExtension = filename.substring(filename.lastIndexOf('.') + 1);
 
-    if (!FILE_EXTENSIONS.includes(fileExtension)) return new CustomError(`Invalid file extension: ${fileExtension}`, StatusCodes.BAD_REQUEST);
-    if (!FILE_TYPES.includes(type)) return new CustomError(`Invalid file type: ${type}`, StatusCodes.BAD_REQUEST);
+    if (!FILE_EXTENSIONS.includes(fileExtension)) return new CustomError(`Invalid file extension: ${fileExtension}`, StatusCodes.UNSUPPORTED_MEDIA_TYPE);
+    if (!FILE_TYPES.includes(type)) return new CustomError(`Invalid file type: ${type}`, StatusCodes.UNSUPPORTED_MEDIA_TYPE);
     return null;
   };
 
@@ -65,6 +65,7 @@ module.exports = ({ db }) => {
     reject(error);
   };
 
+  // This needs a refactor sometime
   const receiveFile = (request) => new Promise((resolve, reject) => {
     const startDate = new Date();
     const processFile = async (err, file) => {
@@ -87,6 +88,7 @@ module.exports = ({ db }) => {
       if (file.length > 1) return rejectError(new CustomError('Only allowed one file per request', StatusCodes.BAD_REQUEST));
 
       const { size, filename, type, fd: oldPath } = file[0];
+      // WIP: filename should be sanitized
       const downloadDurationSec = (new Date() - startDate) / 1000;
       const totalSizeMega = size / 1024 / 1024;
       const averageSpeed = ((totalSizeMega / downloadDurationSec) * 8).toFixed(2); // this is not exact, but good enough
@@ -101,13 +103,14 @@ module.exports = ({ db }) => {
       const isNotUnique = verifyFileName(filename);
       if (isNotUnique) return rejectError(isNotUnique);
 
-      const lastModified = request.headers['last-modified'];
-      const originalDate = isIsoDateString(lastModified) ? lastModified : undefined;
+      const creationDate = request.headers['creation-date'];
+      const originalDate = isIsoDateString(creationDate) ? creationDate : undefined;
 
       logger.debug('File validated, saving file', hash);
 
       const fileStat = await fsp.lstat(oldPath, { bigInt: true });
 
+      // WIP: Move this to service init
       checkPath();
       const newPath = `${FILES_DIRECTORY}/${filename}`;
       await fsp.rename(oldPath, newPath);
@@ -127,14 +130,15 @@ module.exports = ({ db }) => {
     if (!fileData) throw new CustomError(`No file associated with ${uid}`, StatusCodes.NOT_FOUND);
 
     const { path, hash: previousHash, createdAt } = fileData;
-    await fsp.access(path).catch(() => { throw new CustomError(`No file on disk associated with ${uid}`, StatusCodes.NOT_FOUND); });
+    await fsp.access(path).catch(() => { throw new CustomError(`No file on disk associated with ${uid}. It might have been moved`, StatusCodes.NOT_FOUND); });
 
     const [fileHash, { ino, birthtimeNs }] = await Promise.all([createFileHash(path), fsp.lstat(path, { bigInt: true })]);
 
     logger.debug('Validating file', { uid, fileHash });
     const hash = createHash(`${fileHash}-${createdAt}-${ino}-${birthtimeNs}`);
 
-    if (hash !== previousHash) throw new CustomError(`File ${uid} has been modified/replaced`, StatusCodes.INTERNAL_SERVER_ERROR);
+    const isHashValid = crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(previousHash));
+    if (!isHashValid) throw new CustomError(`File ${uid} has been modified/replaced`, CUSTOM_RESPONSES.CODES.hashValidation);
 
     return fileData;
   };

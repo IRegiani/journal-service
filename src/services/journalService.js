@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-object-injection */
 const { v4: generateUid } = require('uuid');
 const { StatusCodes } = require('http-status-codes');
 const { differenceInSeconds } = require('date-fns');
@@ -172,9 +173,9 @@ module.exports = ({ db }) => {
       uid: generateUid(),
       timestamp,
       createdAt: currentDate,
-      entries: firstEntry && [firstEntry],
       author: userUid,
       tags: journalTags,
+      entries: firstEntry && [firstEntry],
     };
 
     db.get('journals').push(journalEntry);

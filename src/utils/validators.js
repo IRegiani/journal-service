@@ -20,6 +20,8 @@ const isIsoDateString = (string) => {
 const validateHeaders = (request, headers = { 'content-type': 'application/json' }) => {
   const requestHeaders = Object.entries(request.headers).reduce((acc, [headerName, headerValue]) => ({ ...acc, [headerName.toLowerCase()]: headerValue }), {});
   if (Object.entries(headers).some(([header, value]) => !requestHeaders[header]?.includes(value))) {
+    // WIP refactor:
+    // if (header === 'content-type' || 'content-encoding') throw new CustomError('Invalid header value', StatusCodes.UNSUPPORTED_MEDIA_TYPE);
     throw new CustomError('Invalid header value', StatusCodes.UNSUPPORTED_MEDIA_TYPE);
   }
 };

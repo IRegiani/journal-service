@@ -52,7 +52,7 @@ module.exports = () => {
       }
     },
 
-    async getTags(request, response, next) {
+    async listTags(request, response, next) {
       const { user } = request;
       const { type } = request.params;
       const { db } = response.locals;
