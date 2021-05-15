@@ -13,19 +13,20 @@ if (config.get('logger.writeToFile')) {
     ---------------------------------------------------------------------------------
   \n`);
 
-  const clearBuffer = (buffer) => {
+  const sanitizeBuffer = (buffer) => {
     const newBuffer = [];
     const skippedIndex = [];
     // eslint-disable-next-line
     for (let [index, value] of buffer.entries()) {
       // 27 is the byte representation of the control character. TODO: This is also cutting the first letter of the logger level
       if (value === 27) skippedIndex.push(...[index, index + 1, index + 2, index + 3, index + 4]);
+      // eslint-disable-next-line security/detect-object-injection
       if (!skippedIndex.includes(index)) newBuffer.push(buffer[index]);
     }
     return Buffer.from(newBuffer);
   };
 
-  const write = (buffer, enc, cb) => { fileStream.write(clearBuffer(buffer)); cb(null); };
+  const write = (buffer, enc, cb) => { fileStream.write(sanitizeBuffer(buffer)); cb(null); };
   const writableStream = new Writable({ write });
   stream.push(writableStream);
 }
@@ -59,6 +60,7 @@ const handleLog = (level, shouldShowMetadata, name) => (message, metadata, extra
   const { prefix: { username, reqId }, suffix } = createLogPrefixAndSuffix(metadata, shouldShowMetadata, extraSuffix);
   const prefixToLog = `[${reqId ? ` reqId: ${reqId} - user: ${username} ` : ''}]`;
 
+  // eslint-disable-next-line security/detect-object-injection
   formatter.scope(name)[level]({ message, prefix: prefixToLog, suffix });
 };
 

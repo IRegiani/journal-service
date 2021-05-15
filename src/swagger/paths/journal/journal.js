@@ -12,6 +12,7 @@ const requestBody = {
         type: 'string',
         format: 'date-time',
         example: '2021-04-02T01:23:57.183Z',
+        default: new Date().toISOString(),
         description: 'Is the day of this entry, not needing to be the same as being created',
       },
       entry: {
@@ -22,7 +23,6 @@ const requestBody = {
       entryTags: { ...tags, description: 'Represents one or more categories of the entry' },
       tags: { ...tags, description: 'Represents one or more categories of the entry, applied on the journal' },
     },
-    required: ['timestamp'],
   },
 };
 

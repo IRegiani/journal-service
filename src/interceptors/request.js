@@ -27,6 +27,7 @@ module.exports = () => {
 
     // const forwardList = requestContext.get('forwardList');
 
+    // eslint-disable-next-line security/detect-object-injection
     logger[loggerLevel]('Request completed', { status, method, url, userAgent, ip, duration }, '\n');
   };
 

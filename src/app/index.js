@@ -42,7 +42,7 @@ class Service {
     this._app.use((request, response, next) => { response.locals.db = databaseInstance; next(); });
 
     this._app.use(RequestInterceptor());
-    this._app.use(skipper());
+    this._app.use(skipper()); // this one is screwing the request context
 
     const initConfig = { gitCommit: this.gitCommit, initDate: this.initDate };
     const apiVersion = config.get('server.version');
@@ -75,6 +75,8 @@ class Service {
     // eslint-disable-next-line new-cap
     const engine = new StormDB.localFileEngine('./journal-db', { async: true });
     this._db = new StormDB(engine);
+
+    require('../services/fileService')().checkPath();
 
     // set default db value if db is empty
     this._db.default({ users: {}, journals: [], files: {}, tags: { entry: [], journal: [] } });

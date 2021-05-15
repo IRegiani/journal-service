@@ -3,7 +3,7 @@ const { StatusCodes } = require('http-status-codes');
 const { pathParameters, headerParameters } = require('../../parameters');
 const { buildResponse, organizeResponses } = require('../../helpers/responses');
 const { FILE_TYPES, CUSTOM_RESPONSES } = require('../../../utils/constants');
-const { getObjectWithoutKeys } = require('../../../utils/utils');
+const { getObjectWithoutValuesByKeys } = require('../../../utils/utils');
 const { tags } = require('../../components/tags')();
 const entry = require('../../components/entry')();
 const file = require('../../components/file')();
@@ -31,7 +31,7 @@ const entryDetailsResponse = {
   schema: {
     type: 'object',
     properties: {
-      ...getObjectWithoutKeys(entry.properties, ['fileUids']),
+      ...getObjectWithoutValuesByKeys(entry.properties, ['fileUids']),
       files: {
         type: 'array',
         items: file,

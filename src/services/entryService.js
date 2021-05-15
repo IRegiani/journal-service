@@ -1,6 +1,8 @@
+// Both functions that receives index had it already checked out in the controller
+/* eslint-disable security/detect-object-injection */
 const { differenceInSeconds } = require('date-fns');
 
-const { createHash, getObjectKeys } = require('../utils/utils');
+const { createHash, getObjectValuesByKeys } = require('../utils/utils');
 const logger = require('../utils/logger').initLogger({ name: 'ENTRY SERVICE' });
 const { MAX_JOURNAL_UPDATE_TIMEOUT, CUSTOM_RESPONSES } = require('../utils/constants');
 const { CustomError } = require('../utils/error')();
@@ -71,12 +73,12 @@ module.exports = (options) => {
     const fileList = await Promise.all(fileUids.map(fileService.retrieveFileDetails));
 
     const fileKeys = ['uid', 'size', 'type', 'createdAt', 'originalDate'];
-    const filesWithUid = fileList.reduce((obj, file) => ({ ...obj, [file.uid]: getObjectKeys(file, fileKeys) }), {});
+    const filesWithUid = fileList.reduce((obj, file) => ({ ...obj, [file.uid]: getObjectValuesByKeys(file, fileKeys) }), {});
 
     return entries.map(({ createdAt, tags, hash, description, fileEntry }, index) => ({
       description,
       createdAt,
-      files: entries[index].fileUids && getObjectKeys(filesWithUid, entries[index].fileUids),
+      files: entries[index].fileUids && getObjectValuesByKeys(filesWithUid, entries[index].fileUids),
       fileEntry,
       tags,
       hash,

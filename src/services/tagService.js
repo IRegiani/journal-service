@@ -5,9 +5,12 @@ const { CustomError } = require('../utils/error')();
 const { TAG_TYPES } = require('../utils/constants');
 const { updateProperties } = require('../utils/utils');
 
+const tagFields = ['name', 'color', 'description'];
+
 // TODO: Move tags into user area after auth
 module.exports = (options = {}) => {
   const { db } = options;
+  // eslint-disable-next-line security/detect-object-injection
   const getTagsFromDB = (tagType) => db.get('tags').value()[tagType];
 
   const validateTagType = (type) => {
@@ -33,8 +36,7 @@ module.exports = (options = {}) => {
   };
 
   const getValidatedTags = (currentTags, tags, tagType) => {
-    // WIP: This should be reviewed, patch should create?
-    if (!currentTags) throw new CustomError('No tags to update, create one first', StatusCodes.BAD_REQUEST);
+    if (!currentTags) throw new CustomError('No tags to update, create one first', StatusCodes.BAD_REQUEST); //
 
     // when removing tags by setting them as null, empty array or creating an empty tag fo journal/entry
     if (tags === null || (!tags && currentTags.length === 0) || tags.length === 0) {
@@ -48,8 +50,9 @@ module.exports = (options = {}) => {
 
     const savedTags = getTagsFromDB(tagType);
     const savedTagsNames = savedTags.map((tag) => tag.name);
-    const allTagsExists = tagsLower.every((newTag) => savedTagsNames.includes(newTag));
-    if (!allTagsExists) throw new CustomError(`Non existent ${tagType} tag found, try creating it first`, StatusCodes.BAD_REQUEST);
+    tagsLower.forEach((newTag) => {
+      if (!savedTagsNames.includes(newTag)) throw new CustomError(`Non existent ${tagType} tag found, try creating it first`, StatusCodes.BAD_REQUEST);
+    });
 
     return tagsLower;
   };
@@ -76,23 +79,22 @@ module.exports = (options = {}) => {
       if (hasTag) throw new CustomError(`${tagType} tag ${tagName} already exists`, StatusCodes.CONFLICT);
     }
 
-    // WIP: test to '' fields.name === null || fields.name === ''
-    if (fields.name === null) throw new CustomError('Tag name cannot be null', StatusCodes.BAD_REQUEST);
+    if (fields.name === null) throw new CustomError('Name cannot be erased', StatusCodes.UNPROCESSABLE_ENTITY);
 
-    const newTag = updateProperties(tag, fields, ['name', 'color', 'description']);
+    const validator = (key, value) => typeof value === 'string';
+    const newTag = updateProperties(tag, fields, tagFields, validator);
     const index = getTagsFromDB(tagType).indexOf(tag);
 
     logger.debug('Tag index is being updated', { name: tagName, tagType, index });
     let modifiedEntities;
 
-    if (fields.name) modifiedEntities = await journalService.updateTagFromEntriesAndJournalsBatch(tag, fields.name, tagType);
+    if (fields.name) modifiedEntities = await journalService.updateTagFromEntriesAndJournalsBatch(tag.name, fields.name, tagType);
 
     await db.get('tags').get(tagType).get(index).set(newTag)
       .save();
 
-    // this wouldn't be accurate if the constant is changed... but its fine
-    const upperCaseName = `modified${tagType === TAG_TYPES.journal ? 'JournalsAndEntries' : 'Entries'}`;
-    return { tag: newTag, [upperCaseName]: modifiedEntities };
+    const keyName = `modified${tagType === TAG_TYPES.journal ? 'JournalsAndEntries' : 'Entries'}`;
+    return { tag: newTag, [keyName]: modifiedEntities };
   };
 
   const deleteTag = async (userUid, tagType, tagName) => {
@@ -102,15 +104,8 @@ module.exports = (options = {}) => {
     logger.debug(`Tag ${tagName} is being removed`, { name: tagName });
     db.get('tags').get(tagType).filter((tag) => tag.name !== tagToDelete.name);
 
-    // WIP: refactor this
     if (tagType === TAG_TYPES.journal) {
-      const journals = journalService.getJournalsByTag(tagToDelete.name);
-      const journalUids = journals.map((journal) => journal.uid);
-      logger.info(`Got ${journals.length} journals with tag ${tagToDelete.name}, updating them`, { journalUids });
-
-      await Promise.all(journals.map(
-        (journal) => journalService.updateJournal(journal.uid, journal.tags.filter((tag) => tag !== tagToDelete.name)),
-      ));
+      const journalUids = await journalService.removeTagFromJournalsBatch(tagToDelete.name);
       return { journalUids };
     }
     const journalUids = await journalService.removeTagFromEntriesBatch(tagToDelete.name);

@@ -20,10 +20,11 @@ module.exports = ({ db }) => {
   const getJournalsByTag = (tag) => db.get('journals').value().filter((journal) => journal.tags?.includes(tag));
 
   const getJournalsByEntriesTag = (tag) => db.get('journals').value().filter(
-    (journal) => journal.entries?.some((entry) => entry?.tags.includes(tag)),
+    (journal) => journal.entries?.some((entry) => entry?.tags?.includes(tag)),
   );
 
-  const _updateEntryAndJournalsByTag = async (journalsUidsToUpdate, tag, tagType, updateFunc, updateHistory) => {
+  // WIP: journalsUidsToUpdate could be removed
+  const _updateEntryOrJournalsByTag = async (journalsUidsToUpdate, tag, tagType, updateFunc, updateHistory) => {
     const allJournals = db.get('journals').value();
     const result = { uids: [], entries: [] };
 
@@ -112,10 +113,14 @@ module.exports = ({ db }) => {
     const isJournalUpdate = tagType === TAG_TYPES.journal;
 
     const journalsUidsToUpdate = (isJournalUpdate ? getJournalsByTag(tag) : getJournalsByEntriesTag(tag)).map((journal) => journal.uid);
-    logger.info(`Got ${journalsUidsToUpdate.length} journals containing the ${tagType} tag ${tag}, updating`, { journalsUidsToUpdate });
+    const noUpdate = journalsUidsToUpdate.length === 0;
+    logger.info(`Got ${journalsUidsToUpdate.length} journals containing the ${tagType} tag ${tag}, ${noUpdate ? 'skipping update' : 'updating'}`, { journalsUidsToUpdate });
+
+    if (noUpdate) return undefined;
+
     const updateFunc = isJournalUpdate ? updateTagInArray : (entry) => ({ ...entry, tags: updateTagInArray(entry.tags) });
 
-    const result = await _updateEntryAndJournalsByTag(journalsUidsToUpdate, tag, tagType, updateFunc);
+    const result = await _updateEntryOrJournalsByTag(journalsUidsToUpdate, tag, tagType, updateFunc);
 
     const formattedResult = isJournalUpdate ? result.uids : _getUpdatedUidsAndEntriesFormatted(result);
 
@@ -123,7 +128,6 @@ module.exports = ({ db }) => {
   };
 
   const removeTagFromEntriesBatch = async (tag) => {
-    // WIP: Check this
     const journalsUidsToUpdate = getJournalsByEntriesTag(tag).map((journal) => journal.uid);
 
     logger.info(`Got ${journalsUidsToUpdate.length} journals containing the tag ${tag} on its entries, removing`, { journalsUidsToUpdate });
@@ -137,9 +141,20 @@ module.exports = ({ db }) => {
       relatedIndexes: updatedIndexes.length === 1 ? undefined : updatedIndexes,
     });
 
-    const result = await _updateEntryAndJournalsByTag(journalsUidsToUpdate, tag, TAG_TYPES.entry, removeFunc, updateHistory);
+    const result = await _updateEntryOrJournalsByTag(journalsUidsToUpdate, tag, TAG_TYPES.entry, removeFunc, updateHistory);
 
     return _getUpdatedUidsAndEntriesFormatted(result);
+  };
+
+  const removeTagFromJournalsBatch = async (oldTag) => {
+    const journalsUidsToUpdate = getJournalsByTag(oldTag);
+    logger.info(`Got ${journalsUidsToUpdate.length} journals containing the tag ${oldTag}, removing`, { journalsUidsToUpdate });
+
+    const removeFunc = (tags) => tags.filter((tag) => tag !== oldTag);
+
+    const result = await _updateEntryOrJournalsByTag(journalsUidsToUpdate, oldTag, TAG_TYPES.journal, removeFunc);
+
+    return result.uids;
   };
 
   const updateJournal = async (uid, tags) => {
@@ -162,7 +177,7 @@ module.exports = ({ db }) => {
     return journal;
   };
 
-  const createJournalEntry = async (timestamp = new Date().toISOString(), textEntry, entryTags, tags, userUid) => {
+  const createJournalEntry = async (timestamp, textEntry, entryTags, tags, userUid) => {
     const entryService = require('./entryService')({ db });
     const currentDate = new Date().toISOString();
 
@@ -171,7 +186,7 @@ module.exports = ({ db }) => {
 
     const journalEntry = {
       uid: generateUid(),
-      timestamp,
+      timestamp: timestamp || currentDate,
       createdAt: currentDate,
       author: userUid,
       tags: journalTags,
@@ -192,6 +207,7 @@ module.exports = ({ db }) => {
     updateJournal,
     createJournalEntry,
     removeTagFromEntriesBatch,
+    removeTagFromJournalsBatch,
     updateTagFromEntriesAndJournalsBatch,
   };
 };

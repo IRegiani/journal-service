@@ -53,7 +53,8 @@ const tag = {
   description: 'Beach travel with friends in february',
 };
 
-// this could be extracted from the schema... but the swagger UI just gets one, not two, this way the dropdown is enabled. Anyway, way easier doing by hand
+// this could be extracted from the schema... but the swagger UI just gets one, not two,
+// this way the dropdown is enabled. Anyway, way easier doing by hand than getting from both schemas
 const examples = {
   modifiedJournals: { value: { tag, modifiedJournals: ['44e84aca-2779-4210-a38e-9a98b1cf9d72', 'f814a6ff-d89f-41e2-aea8-f01c02a74fdb'] } },
   modifiedEntries: {
@@ -94,11 +95,12 @@ module.exports = () => ({
     },
     responses: organizeResponses(
       buildResponse(StatusCodes.OK).withJsonContent(response)
-        .withDescription('This response can be **one of** two defined schema, according to the entities that the tag has relations'),
+        .withDescription('This response can be **one of** the two defined schemas, according to the entities that the tag has the relation'),
       buildResponse(StatusCodes.BAD_REQUEST).withMessage('Invalid tag type'),
       buildResponse(StatusCodes.NOT_FOUND).withMessage('Tag not found'),
       buildResponse(StatusCodes.CONFLICT).withMessage('Existent tag name'),
       buildResponse(StatusCodes.UNSUPPORTED_MEDIA_TYPE).withMessage('Invalid header value').withDescription('Invalid or missing header'),
+      buildResponse(StatusCodes.UNPROCESSABLE_ENTITY).withMessage('Name cannot be erased'),
     ),
   },
 

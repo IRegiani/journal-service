@@ -18,8 +18,8 @@ module.exports = () => {
         logger.info('Creating journal entry');
         validateHeaders(request);
 
-        if (!timestamp || !isIsoDateString(timestamp)) throw new CustomError('Invalid or missing timestamp', StatusCodes.BAD_REQUEST);
-        if (isFuture(new Date(timestamp))) throw new CustomError('Not allowed future timestamp', StatusCodes.BAD_REQUEST);
+        if (timestamp && !isIsoDateString(timestamp)) throw new CustomError('Invalid timestamp', StatusCodes.BAD_REQUEST);
+        if (timestamp && isFuture(new Date(timestamp))) throw new CustomError('Not allowed future timestamp', StatusCodes.BAD_REQUEST);
 
         const journal = await journalService.createJournalEntry(timestamp, entry, entryTags, tags, user.uid);
 
@@ -131,10 +131,15 @@ module.exports = () => {
         if (!index) throw new CustomError('Missing entry index', StatusCodes.BAD_REQUEST);
 
         const journal = journalService.getJournal(uid);
-        if (!journal.entries) throw new CustomError('Journal has no entries', StatusCodes.BAD_REQUEST);
-        if (!journal.entries[index]) throw new CustomError('Invalid entry index', StatusCodes.NOT_FOUND);
+        const parsedIndex = parseInt(index, 10);
 
-        entryService.validate([journal.entries[index]]);
+        if (!journal.entries) throw new CustomError('Journal has no entries', StatusCodes.NOT_FOUND);
+        if (Number.isNaN(parsedIndex)) throw new CustomError('Invalid entry index', StatusCodes.BAD_REQUEST);
+        // eslint-disable-next-line security/detect-object-injection
+        if (!journal.entries[parsedIndex]) throw new CustomError('Invalid entry index, entry not found', StatusCodes.NOT_FOUND);
+
+        // eslint-disable-next-line security/detect-object-injection
+        entryService.validate([journal.entries[parsedIndex]]);
         const file = await fileService.receiveFile(request);
 
         if (!file) throw new CustomError('Missing file', StatusCodes.BAD_REQUEST);
@@ -161,7 +166,6 @@ module.exports = () => {
 
       try {
         logger.info('Updating entry', { index, uid, tags });
-        // https://tools.ietf.org/html/rfc7396
         validateHeaders(request, { 'content-type': 'application/merge-patch+json' });
 
         if (!validate(uid)) throw new CustomError('Invalid UID', StatusCodes.BAD_REQUEST);
@@ -169,11 +173,14 @@ module.exports = () => {
         if (tags === undefined) throw new CustomError('Missing tag property', StatusCodes.BAD_REQUEST);
 
         const journal = journalService.getJournal(uid);
+        const parsedIndex = parseInt(index, 10);
 
         if (!journal.entries) throw new CustomError('Journal has no entries', StatusCodes.NOT_FOUND);
-        if (!journal.entries[index]) throw new CustomError('Invalid entry index', StatusCodes.NOT_FOUND);
+        if (Number.isNaN(parsedIndex)) throw new CustomError('Invalid entry index', StatusCodes.BAD_REQUEST);
+        // eslint-disable-next-line security/detect-object-injection
+        if (!journal.entries[parsedIndex]) throw new CustomError('Invalid entry index, entry not found', StatusCodes.NOT_FOUND);
 
-        const updatedEntry = await entryService.updateEntryTags(index, journal, tags);
+        const updatedEntry = await entryService.updateEntryTags(parsedIndex, journal, tags);
 
         logger.success('Entry updated', { index, uid });
 

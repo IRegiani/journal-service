@@ -6,6 +6,7 @@ const { CUSTOM_RESPONSES } = require('../../utils/constants');
 class ResponseBuilder {
   constructor(responseCode) {
     this.code = responseCode;
+    // eslint-disable-next-line security/detect-object-injection
     this.description = CUSTOM_RESPONSES.DESCRIPTION[responseCode] || getReasonPhrase(responseCode);
   }
 

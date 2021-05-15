@@ -31,10 +31,10 @@ module.exports = () => ({
     operationId: 'createTag',
     requestBody: {
       required: true,
-      content: { 'application/merge-patch+json': { ...requestBody, required: ['name'] } },
+      content: { 'application/json': { ...requestBody, required: ['name'] } },
     },
     responses: organizeResponses(
-      buildResponse(StatusCodes.OK).withJsonContent(requestBody),
+      buildResponse(StatusCodes.CREATED).withJsonContent(requestBody),
       buildResponse(StatusCodes.BAD_REQUEST).withMessage('Missing tag name'),
       buildResponse(StatusCodes.CONFLICT).withMessage('Existent tag name'),
     ),

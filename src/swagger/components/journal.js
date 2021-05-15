@@ -1,4 +1,4 @@
-const { getObjectWithoutKeys } = require('../../utils/utils');
+const { getObjectWithoutValuesByKeys } = require('../../utils/utils');
 const entry = require('./entry')();
 const tags = require('./tags')();
 
@@ -15,6 +15,7 @@ const fullJournal = {
         type: 'string',
         format: 'date-time',
         example: '2021-05-08T23:56:15.585Z',
+        default: new Date().toISOString(),
       },
       createdAt: {
         type: 'string',
@@ -44,7 +45,7 @@ const basicJournal = {
         type: 'array',
         items: {
           type: 'object',
-          properties: getObjectWithoutKeys(entry.properties, ['fileUids', 'fileEntry']),
+          properties: getObjectWithoutValuesByKeys(entry.properties, ['fileUids', 'fileEntry']),
         },
       },
     },

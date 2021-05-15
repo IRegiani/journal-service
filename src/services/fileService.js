@@ -1,3 +1,5 @@
+// Most fs are done directly from database paths, and the only one that happens is based on filename is sanitized
+/* eslint-disable security/detect-non-literal-fs-filename */
 const os = require('os');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -11,7 +13,8 @@ const { FILE_EXTENSIONS, FILE_TYPES, FILES_DIRECTORY, MAX_FILE_BYTES, CUSTOM_RES
 const { createHash, getFileName } = require('../utils/utils');
 const { isIsoDateString } = require('../utils/validators');
 
-module.exports = ({ db }) => {
+module.exports = (options = {}) => {
+  const { db } = options;
   const createFileHash = (filePath) => new Promise((resolve) => {
     const hash = crypto.createHash('sha256');
     fs.createReadStream(filePath)
@@ -24,6 +27,7 @@ module.exports = ({ db }) => {
 
     if (fs.existsSync(`${FILES_DIRECTORY}/${fileName}`)) return new CustomError('A file with this name already exists in the directory', StatusCodes.CONFLICT);
 
+    // eslint-disable-next-line security/detect-object-injection
     if (Object.keys(currentFiles).some((fileUid) => getFileName(currentFiles[fileUid].path) === fileName)) {
       return new CustomError('A file with this name already exists', StatusCodes.CONFLICT);
     }
@@ -88,7 +92,8 @@ module.exports = ({ db }) => {
       if (file.length > 1) return rejectError(new CustomError('Only allowed one file per request', StatusCodes.BAD_REQUEST));
 
       const { size, filename, type, fd: oldPath } = file[0];
-      // WIP: filename should be sanitized
+      // WIP: filename should be sanitized or path.normalize(path) when reading
+      // https://owasp.org/www-community/attacks/Path_Traversal
       const downloadDurationSec = (new Date() - startDate) / 1000;
       const totalSizeMega = size / 1024 / 1024;
       const averageSpeed = ((totalSizeMega / downloadDurationSec) * 8).toFixed(2); // this is not exact, but good enough
@@ -110,8 +115,6 @@ module.exports = ({ db }) => {
 
       const fileStat = await fsp.lstat(oldPath, { bigInt: true });
 
-      // WIP: Move this to service init
-      checkPath();
       const newPath = `${FILES_DIRECTORY}/${filename}`;
       await fsp.rename(oldPath, newPath);
 
@@ -144,6 +147,7 @@ module.exports = ({ db }) => {
   };
 
   return {
+    checkPath,
     receiveFile,
     createFileHash,
     retrieveFileDetails,
