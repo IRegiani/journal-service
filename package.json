@@ -37,6 +37,7 @@
     "express-http-context": "^1.2.4",
     "helmet": "^4.1.1",
     "http-status-codes": "^2.1.4",
+    "mediainfo.js": "^0.1.5",
     "on-finished": "^2.3.0",
     "signale": "^1.4.0",
     "skipper": "^0.8.7",

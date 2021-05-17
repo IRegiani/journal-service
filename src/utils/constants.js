@@ -10,9 +10,11 @@ module.exports = {
     'image/png',
     'image/jpg',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'audio/mpeg',
   ],
 
   MAX_FILE_BYTES: 2684354560, // 2.5 GiB
+  FILE_CHUNK: 10 ** 6 * 25, // 50 MiB
 
   MAX_JOURNAL_UPDATE_TIMEOUT: 5,
 
@@ -34,5 +36,10 @@ module.exports = {
     DESCRIPTION: {
       530: 'Hash validation failed. The requested resource was modified by a third party',
     },
+  },
+
+  CUSTOM_HEADERS: {
+    creationDate: 'creation-date',
+    mediaInfo: 'media-info',
   },
 };

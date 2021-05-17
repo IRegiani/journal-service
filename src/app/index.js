@@ -14,6 +14,7 @@ const IndexRouter = require('../routers/indexRouter');
 // const AuthorizationRouter = require('../routers/authorizationRouter');
 const JournalRouter = require('../routers/journalRouter');
 const TagRouter = require('../routers/tagRouter');
+const FileRouter = require('../routers/fileRouter');
 const StatisticsRouter = require('../routers/statisticsRouter');
 
 // Interceptors
@@ -42,7 +43,7 @@ class Service {
     this._app.use((request, response, next) => { response.locals.db = databaseInstance; next(); });
 
     this._app.use(RequestInterceptor());
-    this._app.use(skipper()); // this one is screwing the request context
+    this._app.use(skipper()); // WIP: this one is screwing the request context
 
     const initConfig = { gitCommit: this.gitCommit, initDate: this.initDate };
     const apiVersion = config.get('server.version');
@@ -52,13 +53,13 @@ class Service {
     // this._app.use(AuthorizationRouter());
     this._app.use(apiVersion, JournalRouter());
     this._app.use(apiVersion, TagRouter());
+    this._app.use(apiVersion, FileRouter());
     this._app.use(apiVersion, StatisticsRouter(initConfig));
 
     const swaggerContent = require('../swagger')();
     this._app.use(`${apiVersion}/documentation`, swagger.serve, swagger.setup(swaggerContent, { explorer: true }));
 
-    // eslint-disable-next-line no-unused-vars
-    const errorHandler = (err, req, res, next) => {
+    const errorHandler = (err, req, res) => {
       this.logger.error(`Unhandled error in ${req.path}`, { method: req.method, path: req.path, err });
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: err.message });
     };

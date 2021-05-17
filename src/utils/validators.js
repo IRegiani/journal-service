@@ -26,9 +26,9 @@ const validateHeaders = (request, headers = { 'content-type': 'application/json'
   const requestHeaders = Object.entries(request.headers).reduce((acc, [headerName, headerValue]) => ({ ...acc, [headerName.toLowerCase()]: headerValue }), {});
   Object.entries(headers).forEach(([headerName, headerValue]) => {
     // eslint-disable-next-line security/detect-object-injection
-    if (!requestHeaders[headerName].includes(headerValue)) {
+    if (!requestHeaders[headerName]?.includes(headerValue)) {
       if (headerName === 'content-type' || headerName === 'content-encoding') {
-        throw new CustomError(`Invalid header value "${headerValue}" for ${headerName}`, StatusCodes.UNSUPPORTED_MEDIA_TYPE);
+        throw new CustomError(`Invalid header value *${headerValue}* for ${headerName}`, StatusCodes.UNSUPPORTED_MEDIA_TYPE);
       }
       throw new CustomError(`Missing or invalid required header: ${headerName}`, StatusCodes.BAD_REQUEST); // this could be 422, but the body is not validated yet
     }

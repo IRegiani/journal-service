@@ -10,10 +10,19 @@ module.exports = {
   limit: {
     in: 'query',
     name: 'limit',
-    description: 'he numbers of items to return',
+    description: 'The numbers of items to return',
     schema: {
       type: 'integer',
       default: 10,
+    },
+  },
+  includeMediaInfo: {
+    in: 'query',
+    name: 'includeMediaInfo',
+    description: 'When used, includes an summary of media info data if available in the response header',
+    schema: {
+      type: 'boolean',
+      default: false,
     },
   },
 };

@@ -21,7 +21,7 @@ const requestBody = {
 module.exports = () => ({
   post: {
     tags: ['Journal'],
-    summary: 'Added a file into an existing entry',
+    summary: 'Add a file into an existing entry',
     operationId: 'addsFileIntoEntry',
     description: `Adds a file into an existing entry inside journal entry.
                   The following file types are accepted: \n\n\`${FILE_TYPES.join(', ')}\``,

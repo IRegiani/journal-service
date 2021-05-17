@@ -1,4 +1,5 @@
 const config = require('config');
+// eslint-disable-next-line security/detect-child-process
 const gitCommit = require('child_process').execSync('git rev-parse HEAD').toString().trim();
 
 const logger = require('./src/utils/logger').initLogger({ name: 'MAIN' });

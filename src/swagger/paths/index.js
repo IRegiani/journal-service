@@ -11,7 +11,8 @@ module.exports = () => ({
   '/tag/{type}': require('./tag/tag-type')(),
   '/tag/{type}/{tag}': require('./tag/tag-type-tag')(),
 
-  // '/file/{uid}': require('./attachment/attachment-uid-journal')(),
+  '/file/{uid}': require('./file/file-uid')(),
+  '/file/{uid}/mediaInfo': require('./file/file-uid-mediaInfo')(),
 
   // '/statistics': require()(),
 });

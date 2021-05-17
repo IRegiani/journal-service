@@ -51,12 +51,13 @@ class ResponseBuilder {
     return this;
   }
 
-  withNoContent() {
-    this.content = undefined;
+  withCustomContent(content) {
+    this.content = content;
     return this;
   }
 
-  withHeaders(extraHeaders) {
+  withHeaders(headerArray) {
+    const extraHeaders = headerArray.reduce((acc, header) => ({ ...acc, [header.name]: header }), {});
     this.headers = {
       ...this.headers,
       ...extraHeaders,
