@@ -150,8 +150,8 @@ module.exports = (options = {}) => {
     logger.debug('Validating file', { uid, fileHash });
     const hash = createHash(`${fileHash}-${createdAt}-${ino}-${birthtimeNs}`);
 
-    const isHashValid = crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(previousHash));
-    if (!isHashValid) throw new CustomError(`File ${uid} has been modified/replaced`, CUSTOM_RESPONSES.CODES.hashValidation);
+    // eslint-disable-next-line security/detect-possible-timing-attacks
+    if (hash === previousHash) throw new CustomError(`File ${uid} has been modified/replaced`, CUSTOM_RESPONSES.CODES.hashValidation);
 
     return fileData;
   };

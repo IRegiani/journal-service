@@ -20,7 +20,7 @@
     "url": "git+ssh://git@github.com/IRegiani/journal-service.git"
   },
   "author": "Iago R. Regiani",
-  "license": "ISC",
+  "license": "AGPL-3.0 License",
   "bugs": {
     "url": "https://github.com/IRegiani/journal-service/issues"
   },
@@ -37,10 +37,11 @@
     "express-http-context": "^1.2.4",
     "helmet": "^4.1.1",
     "http-status-codes": "^2.1.4",
+    "lodash": "^4.17.21",
     "mediainfo.js": "^0.1.5",
     "on-finished": "^2.3.0",
     "signale": "^1.4.0",
-    "skipper": "^0.8.7",
+    "skipper": "^0.9.1",
     "stormdb": "^0.4.1",
     "swagger-ui-express": "^4.1.6",
     "uuid": "^8.3.2"

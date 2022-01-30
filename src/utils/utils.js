@@ -1,7 +1,11 @@
+/* eslint-disable no-multiple-empty-lines */
 const crypto = require('crypto');
+const lodash = require('lodash');
 const { StatusCodes } = require('http-status-codes');
 
 const { CustomError } = require('./error')();
+const logger = require('./logger').initLogger({ name: 'UTILS' });
+
 
 const createHash = (string) => crypto.createHash('sha256').update(string).digest('hex');
 
@@ -49,6 +53,61 @@ const updateProperties = (originalObject, changes, allowedProperties, formatChec
   return newObject;
 };
 
+/**
+ * @description Paginates a list of items
+ *
+ * @param {object} paginationParams Contains the pagination properties
+ * @param {number=} paginationParams.limit The amount of items allowed per page
+ * @param {number=0} paginationParams.offset Shift the page by some amount of items
+ * @param {array} items List of items to be paginated
+ * @returns {object} response
+ * @returns {array} response.list
+ * @returns {object} response.headers
+ * @returns {integer} response.headers.total-count
+ */
+const paginateItems = ({ limit = 10, offset = 0 }, items) => {
+  if (!limit && !offset) return { list: items };
+  const paginatedItems = items.slice(offset, offset + limit);
+  const headers = {
+    'total-count': items.length,
+    'total-pages': Math.ceil(items.length / (limit || items.length)),
+    // 'Access-Control-Expose-Headers': 'total-count, total-pages',
+  };
+
+  logger.debug('Paginating items', { offset, limit, size: items.length });
+
+  if (limit !== items.length) {
+    const previous = offset - limit;
+    const next = offset + limit;
+
+    if (offset < items.length) {
+      if (previous < 0) headers['previous-offset'] = 0;
+      else headers['previous-offset'] = previous;
+
+      // headers['Access-Control-Expose-Headers'] += ', previous-offset';
+    }
+
+    if (next < items.length) {
+      headers['next-offset'] = next;
+      // headers['Access-Control-Expose-Headers'] += ', next-offset';
+    }
+  }
+
+  return { list: paginatedItems, headers };
+};
+
+const sortItems = ({ sortBy, order = 'asc' }, items, selectors) => {
+  logger.debug('Sorting items', { sortBy, order });
+
+  if (!Object.keys(selectors).includes(sortBy)) throw new CustomError(`Invalid sortBy value: ${sortBy}`);
+
+  // eslint-disable-next-line security/detect-object-injection
+  const sortedItems = lodash.sortBy(items, selectors[sortBy], [order]);
+
+  return sortedItems;
+};
+
+
 module.exports = {
   createHash,
   getFileName,
@@ -56,4 +115,6 @@ module.exports = {
   getObjectWithoutValuesByKeys,
   addNewItemOrCreateArray,
   updateProperties,
+  paginateItems,
+  sortItems,
 };

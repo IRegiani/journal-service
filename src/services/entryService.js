@@ -3,9 +3,9 @@
 const { differenceInSeconds } = require('date-fns');
 
 const { createHash, getObjectValuesByKeys } = require('../utils/utils');
-const logger = require('../utils/logger').initLogger({ name: 'ENTRY SERVICE' });
 const { MAX_JOURNAL_UPDATE_TIMEOUT, CUSTOM_RESPONSES } = require('../utils/constants');
 const { CustomError } = require('../utils/error')();
+const logger = require('../utils/logger').initLogger({ name: 'ENTRY SERVICE' });
 
 module.exports = (options) => {
   const tagService = require('./tagService')(options);

@@ -6,8 +6,8 @@ module.exports = () => {
   JournalRouter.use('/journal', AuthorizationController.authorize);
 
   JournalRouter.route('/journal')
-    .post(JournalController.createJournal);
-  // TODO: .get(JournalController.search); // retrieves all journals within date range, with tags and/or entry tags
+    .post(JournalController.createJournal)
+    .get(JournalController.searchJournals);
   JournalRouter.route('/journal/:uid')
     .get(JournalController.retrieve)
     .patch(JournalController.updateJournalEntry);

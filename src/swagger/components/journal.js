@@ -1,6 +1,6 @@
 const { getObjectWithoutValuesByKeys } = require('../../utils/utils');
 const entry = require('./entry')();
-const tags = require('./tags')();
+const { tags } = require('./tags')();
 
 const fullJournal = {
   schema: {
@@ -52,4 +52,23 @@ const basicJournal = {
   },
 };
 
-module.exports = () => ({ fullJournal, basicJournal });
+const smallJournalList = {
+  schema: {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        ...fullJournal.schema.properties,
+        // entries: {
+        //   type: 'array',
+        //   items: {
+        //     type: 'object',
+        //     properties: getObjectWithoutValuesByKeys(entry.properties, ['fileUids', 'fileEntry']),
+        //   },
+        // },
+      },
+    },
+  },
+};
+
+module.exports = () => ({ fullJournal, basicJournal, smallJournalList });

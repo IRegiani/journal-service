@@ -1,7 +1,8 @@
 const { StatusCodes } = require('http-status-codes');
 
 const { buildResponse, organizeResponses } = require('../../helpers/responses');
-const { basicJournal } = require('../../components/journal')();
+const { queryParameters } = require('../../parameters');
+const { smallJournalList, basicJournal } = require('../../components/journal')();
 const { tags } = require('../../components/tags')();
 
 const requestBody = {
@@ -27,6 +28,27 @@ const requestBody = {
 };
 
 module.exports = () => ({
+  get: {
+    tags: ['Journal'],
+    summary: 'Retrieves a list of journal',
+    description: 'Searches all journals and returns those that satisfies the passed query params according to the order described in the following parameter list',
+    operationId: 'searchJournal',
+    parameters: [
+      queryParameters.date,
+      queryParameters.timestamp,
+      queryParameters.tag,
+      queryParameters.search,
+      queryParameters.entryDetails,
+      queryParameters.sortBy,
+      queryParameters.order,
+      queryParameters.limit,
+      queryParameters.offset,
+    ],
+    responses: organizeResponses(
+      buildResponse(StatusCodes.OK).withJsonContent(smallJournalList),
+      buildResponse(StatusCodes.BAD_REQUEST),
+    ),
+  },
   post: {
     tags: ['Journal'],
     summary: 'Creates a new journal entry',
@@ -41,5 +63,4 @@ module.exports = () => ({
       buildResponse(StatusCodes.BAD_REQUEST).withMessage('Missing or invalid property'),
     ),
   },
-  // get: {} TODO: Search journals
 });

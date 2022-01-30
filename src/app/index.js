@@ -59,13 +59,14 @@ class Service {
     const swaggerContent = require('../swagger')();
     this._app.use(`${apiVersion}/documentation`, swagger.serve, swagger.setup(swaggerContent, { explorer: true }));
 
-    const errorHandler = (err, req, res) => {
+    // eslint-disable-next-line no-unused-vars
+    const errorHandler = (err, req, res, next) => {
       this.logger.error(`Unhandled error in ${req.path}`, { method: req.method, path: req.path, err });
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: err.message });
     };
 
-    this._app.use(errorHandler);
     this._app.use((req, res) => res.status(StatusCodes.NOT_FOUND).json({ message: 'Route not found' }));
+    this._app.use(errorHandler);
   }
 
   async listen(...params) {

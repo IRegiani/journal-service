@@ -7,6 +7,8 @@ const logger = require('../utils/logger').initLogger({ name: 'JOURNAL SERVICE' }
 const { CustomError } = require('../utils/error')();
 const { MAX_JOURNAL_UPDATE_TIMEOUT, UPDATE_TYPES, TAG_TYPES } = require('../utils/constants');
 const { addNewItemOrCreateArray } = require('../utils/utils');
+const { filterByOperator, filterByDate } = require('./filterService');
+const { validateQueryStringOperators } = require('../utils/validators');
 
 module.exports = ({ db }) => {
   const tagService = require('./tagService')({ db });
@@ -199,9 +201,40 @@ module.exports = ({ db }) => {
     return journalEntry;
   };
 
+  const getFilteredJournals = (queryParams, userUid) => {
+    // eslint-disable-next-line no-unused-vars
+    const { timestamp, date, tag, search, entryDetails } = queryParams;
+    let journals = db.get('journals').value();
+
+    if (userUid) journals = journals.filter((journal) => journal.author === userUid);
+    if (date) journals = journals.filter(filterByDate(date, 'createdAt'));
+    if (timestamp) journals = journals.filter(filterByDate(timestamp, 'timestamp'));
+    if (tag) {
+      validateQueryStringOperators(tag, 'tag');
+      journals = journals.filter(filterByOperator(tag, (journal) => journal.tag));
+    }
+    if (search) {
+      validateQueryStringOperators(search, 'search');
+      journals = journals.filter(filterByOperator(search, (journal) => journal.entries.map((entry) => entry.description)).join());
+    }
+    // WIP: Continue after Mongo refactor
+    // if (entryDetails) {
+    //   validateQueryStringOperators(entryDetails, 'entryDetails');
+    //   if (entryDetails.includes('fileMetadata')) {
+    //     journals = filterByMetadata(journals, entryDetails);
+    //   }
+    //   // This should be handled in other way
+    //   journals = journals.filter(filterByOperator(entryDetails, (journal) => journal.entries));
+    // }
+
+    // remove entry description hash and author
+    return journals.map((journal) => ({ ...journal }));
+  };
+
   return {
     getJournal,
     getJournalsByTag,
+    getFilteredJournals,
     addEntry,
     updateEntry,
     updateJournal,

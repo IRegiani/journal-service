@@ -6,6 +6,7 @@ const { TAG_TYPES } = require('../utils/constants');
 const { updateProperties } = require('../utils/utils');
 
 const tagFields = ['name', 'color', 'description'];
+const forbiddenValues = ['[', ']'];
 
 // TODO: Move tags into user area after auth
 module.exports = (options = {}) => {
@@ -20,6 +21,9 @@ module.exports = (options = {}) => {
   const createTag = async (name, description, color, userUid, tagType) => {
     validateTagType(tagType);
     if (!name) throw new CustomError('Missing tag name', StatusCodes.BAD_REQUEST);
+    if (forbiddenValues.any((value) => name.includes(value))) {
+      throw new CustomError(`Tag cannot contain these characters: ${forbiddenValues.join('')}`, StatusCodes.BAD_REQUEST);
+    }
 
     const currentTags = getTagsFromDB(tagType);
     const lowerCaseName = name.toLowerCase().trim();
@@ -28,9 +32,8 @@ module.exports = (options = {}) => {
 
     const newTag = { name: lowerCaseName, description, color };
 
-    currentTags.push(newTag);
     logger.debug(`Adding new ${tagType} tag`, name);
-    await db.save();
+    await db.get('tags').get(tagType).push(newTag).save();
 
     return newTag;
   };

@@ -5,6 +5,7 @@ const { isFuture } = require('date-fns');
 const logger = require('../utils/logger').initLogger({ name: 'JOURNAL CONTROLLER' });
 const { isIsoDateString, validateHeaders } = require('../utils/validators');
 const { CustomError, handleError, isExpectedError } = require('../utils/error')();
+const { paginateItems, sortItems } = require('../utils/utils');
 
 module.exports = () => {
   const JournalController = {
@@ -29,6 +30,7 @@ module.exports = () => {
       } catch (error) {
         if (isExpectedError(error)) return handleError(response, error, logger);
 
+        // This return is not necessary, but let's leave eslint happy
         return next(error);
       }
     },
@@ -211,6 +213,40 @@ module.exports = () => {
         logger.success('Journal updated', { uid });
 
         return response.status(StatusCodes.OK).json(updatedJournal);
+      } catch (error) {
+        if (isExpectedError(error)) return handleError(response, error, logger);
+
+        return next(error);
+      }
+    },
+
+    async searchJournals(request, response, next) {
+      const { query, user } = request;
+      const { db } = response.locals;
+
+      const journalService = require('../services/journalService')({ db });
+
+      try {
+        logger.info('Searching journal entries', query);
+
+        const journals = await journalService.getFilteredJournals(query, user.uid);
+
+        const selectors = {
+          timestamp: (item) => new Date(item.timestamp),
+          createdAt: (item) => new Date(item.createdAt),
+          tag: (item) => item.tags?.sort()[0],
+          entryTag: (item) => item.entries.filter((entryItem) => entryItem.tags),
+          fileAmount: (item) => item.entries.reduce((acc, entryItem) => (entryItem.fileUids?.length !== 0 ? acc + entryItem.fileUids.length : acc), 0),
+          entryAmount: (item) => item.entries.length,
+          // WIP: Check how an invalid date is sorted
+          updateHistory: (item) => new Date(item.updateHistory[item.updateHistory?.length - 1]?.updatedAt),
+          // entryDetails ?
+        };
+
+        const sortedJournals = sortItems({ sortBy: 'timestamp', ...query }, journals, selectors);
+        const { list: paginatedJournals, headers } = paginateItems(query, sortedJournals);
+
+        return response.set(headers).status(StatusCodes.OK).json(paginatedJournals);
       } catch (error) {
         if (isExpectedError(error)) return handleError(response, error, logger);
 

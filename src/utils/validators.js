@@ -35,7 +35,18 @@ const validateHeaders = (request, headers = { 'content-type': 'application/json'
   });
 };
 
+const isDateOperatorValid = (operator) => ['>', '<', '..', '>=', '<='].includes(operator);
+// checks if all brackets were closed and if the values are expected
+const validateQueryStringOperators = (query, argName) => {
+  if ([...query.matchAll(/\[|\]/g)].length % 2 === 0
+    && [...query.matchAll(/\[(.*?)\]/g)].some((op) => !['NOT', 'AND', 'OR'].includes(op))) {
+    throw new CustomError(`Invalid logic operator in queryParam: ${argName}`, StatusCodes.BAD_REQUEST);
+  }
+};
+
 module.exports = {
   isIsoDateString,
   validateHeaders,
+  isDateOperatorValid,
+  validateQueryStringOperators,
 };

@@ -1,4 +1,4 @@
-const tags = require('./tags')();
+const { tags } = require('./tags')();
 
 const fileEntity = {
   type: 'string',
