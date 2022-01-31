@@ -8,22 +8,22 @@ const environment = process.env.NODE_ENV || 'local';
 const Service = require('./src/app');
 
 const init = async () => {
-  try {
-    logger.info(`Starting Service: environment:${environment} commit:${gitCommit} `);
-    const service = new Service(logger, gitCommit);
-    await service.init();
+    try {
+        logger.info(`Starting Service: environment:${environment} commit:${gitCommit} `);
+        const service = new Service(logger, gitCommit);
+        await service.init();
 
-    const { port, version } = config.get('server');
+        const { port, version } = config.get('server');
 
-    service.listen(port, (error) => {
-      if (error) throw error;
-      logger.success(`Service started 🚀 See routes at: http://localhost:${port}${version}/documentation \n`);
-    });
-  } catch (error) {
-    logger.error(`Error initializing Service: ${error.message}`, error);
+        service.listen(port, (error) => {
+            if (error) throw error;
+            logger.success(`Service started 🚀 See routes at: http://localhost:${port}${version}/documentation \n`);
+        });
+    } catch (error) {
+        logger.error(`Error initializing Service: ${error.message}`, error);
 
-    process.exitCode = 1;
-  }
+        process.exitCode = 1;
+    }
 };
 
 init();

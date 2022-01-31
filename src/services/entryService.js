@@ -8,103 +8,103 @@ const { CustomError } = require('../utils/error')();
 const logger = require('../utils/logger').initLogger({ name: 'ENTRY SERVICE' });
 
 module.exports = (options) => {
-  const tagService = require('./tagService')(options);
-  const journalService = require('./journalService')(options);
-  const fileService = require('./fileService')(options);
+    const tagService = require('./tagService')(options);
+    const journalService = require('./journalService')(options);
+    const fileService = require('./fileService')(options);
 
-  const getHashForEntry = (entry) => createHash(`${entry.description}${entry.fileUids}${entry.createdAt}`);
+    const getHashForEntry = (entry) => createHash(`${entry.description}${entry.fileUids}${entry.createdAt}`);
 
-  const addAttachment = async (index, journal, file) => {
-    const updatedEntry = { ...journal.entries[index] };
-    if (updatedEntry.fileUids) updatedEntry.fileUids.push(file.uid);
-    else updatedEntry.fileUids = [file.uid];
+    const addAttachment = async (index, journal, file) => {
+        const updatedEntry = { ...journal.entries[index] };
+        if (updatedEntry.fileUids) updatedEntry.fileUids.push(file.uid);
+        else updatedEntry.fileUids = [file.uid];
 
-    const { description, fileUids, createdAt } = updatedEntry;
-    updatedEntry.hash = createHash(`${description}${fileUids}${createdAt}`);
+        const { description, fileUids, createdAt } = updatedEntry;
+        updatedEntry.hash = createHash(`${description}${fileUids}${createdAt}`);
 
-    await journalService.updateEntry(index, journal.uid, updatedEntry, file);
-    logger.info('Attachment added to entry', index);
+        await journalService.updateEntry(index, journal.uid, updatedEntry, file);
+        logger.info('Attachment added to entry', index);
 
-    return updatedEntry;
-  };
-
-  const createEntry = (currentDate = new Date().toISOString(), description, entryTags, fileUid, fileEntry) => {
-    const tags = tagService.getValidatedEntryTags([], entryTags);
-
-    if (!description && !fileUid) return undefined;
-
-    const entry = {
-      // TODO: device
-      description,
-      createdAt: currentDate,
-      fileUids: fileUid && [fileUid],
-      fileEntry: fileEntry ? fileUid : undefined,
-      tags,
+        return updatedEntry;
     };
-    entry.hash = getHashForEntry(entry);
 
-    return entry;
-  };
+    const createEntry = (currentDate = new Date().toISOString(), description, entryTags, fileUid, fileEntry) => {
+        const tags = tagService.getValidatedEntryTags([], entryTags);
 
-  const createAndSaveEntry = async (journal, description, file, fileEntry, tags) => {
-    const dateDiff = differenceInSeconds(new Date(file?.createdAt || new Date()), new Date(journal.createdAt));
-    const willReceiveNewDate = dateDiff > MAX_JOURNAL_UPDATE_TIMEOUT || journal.entries.length > 0;
-    const date = willReceiveNewDate ? undefined : journal.createdAt;
+        if (!description && !fileUid) return undefined;
 
-    logger.debug(`Creating entry to journal ${journal.uid} ${willReceiveNewDate ? 'with new date' : `dating ${journal.createdAt}`}`);
+        const entry = {
+            // TODO: device
+            description,
+            createdAt: currentDate,
+            fileUids: fileUid && [fileUid],
+            fileEntry: fileEntry ? fileUid : undefined,
+            tags,
+        };
+        entry.hash = getHashForEntry(entry);
 
-    const newEntry = createEntry(date, description, tags, file?.uid, fileEntry);
-    await journalService.addEntry(journal.uid, newEntry);
+        return entry;
+    };
 
-    return newEntry;
-  };
+    const createAndSaveEntry = async (journal, description, file, fileEntry, tags) => {
+        const dateDiff = differenceInSeconds(new Date(file?.createdAt || new Date()), new Date(journal.createdAt));
+        const willReceiveNewDate = dateDiff > MAX_JOURNAL_UPDATE_TIMEOUT || journal.entries.length > 0;
+        const date = willReceiveNewDate ? undefined : journal.createdAt;
 
-  const validate = (entries = []) => {
-    logger.debug(`Validating ${entries.length} entries`);
-    const hasInvalidEntry = entries.some((entry) => entry.hash !== getHashForEntry(entry));
-    if (hasInvalidEntry) throw new CustomError('Entry has been modified/replaced', CUSTOM_RESPONSES.CODES.hashValidation);
-  };
+        logger.debug(`Creating entry to journal ${journal.uid} ${willReceiveNewDate ? 'with new date' : `dating ${journal.createdAt}`}`);
 
-  const retrieveEntriesDetails = async (entries) => {
-    validate(entries);
+        const newEntry = createEntry(date, description, tags, file?.uid, fileEntry);
+        await journalService.addEntry(journal.uid, newEntry);
 
-    const fileUids = entries.filter((entry) => entry.fileUids).map((ety) => ety.fileUids).flat();
-    // it's an array of entries, with an array of fileUids. Beware, not all entry has a file
-    const fileList = await Promise.all(fileUids.map(fileService.retrieveFileDetails));
+        return newEntry;
+    };
 
-    const fileKeys = ['uid', 'size', 'type', 'createdAt', 'originalDate'];
-    const filesWithUid = fileList.reduce((obj, file) => ({ ...obj, [file.uid]: getObjectValuesByKeys(file, fileKeys) }), {});
+    const validate = (entries = []) => {
+        logger.debug(`Validating ${entries.length} entries`);
+        const hasInvalidEntry = entries.some((entry) => entry.hash !== getHashForEntry(entry));
+        if (hasInvalidEntry) throw new CustomError('Entry has been modified/replaced', CUSTOM_RESPONSES.CODES.hashValidation);
+    };
 
-    return entries.map(({ createdAt, tags, hash, description, fileEntry }, index) => ({
-      description,
-      createdAt,
-      files: entries[index].fileUids && getObjectValuesByKeys(filesWithUid, entries[index].fileUids),
-      fileEntry,
-      tags,
-      hash,
-    }));
-  };
+    const retrieveEntriesDetails = async (entries) => {
+        validate(entries);
 
-  const updateEntryTags = async (index, journal, tags) => {
-    const entry = journal.entries[index];
-    validate([entry]);
+        const fileUids = entries.filter((entry) => entry.fileUids).map((ety) => ety.fileUids).flat();
+        // it's an array of entries, with an array of fileUids. Beware, not all entry has a file
+        const fileList = await Promise.all(fileUids.map(fileService.retrieveFileDetails));
 
-    const currentTags = entry.tags;
+        const fileKeys = ['uid', 'size', 'type', 'createdAt', 'originalDate'];
+        const filesWithUid = fileList.reduce((obj, file) => ({ ...obj, [file.uid]: getObjectValuesByKeys(file, fileKeys) }), {});
 
-    const updatedTags = tagService.getValidatedEntryTags(currentTags, tags);
-    const newEntry = { ...entry, tags: updatedTags };
+        return entries.map(({ createdAt, tags, hash, description, fileEntry }, index) => ({
+            description,
+            createdAt,
+            files: entries[index].fileUids && getObjectValuesByKeys(filesWithUid, entries[index].fileUids),
+            fileEntry,
+            tags,
+            hash,
+        }));
+    };
 
-    const updatedJournal = await journalService.updateEntry(index, journal.uid, newEntry);
+    const updateEntryTags = async (index, journal, tags) => {
+        const entry = journal.entries[index];
+        validate([entry]);
 
-    return updatedJournal.entries[index];
-  };
+        const currentTags = entry.tags;
 
-  return {
-    validate,
-    createEntry,
-    createAndSaveEntry,
-    retrieveEntriesDetails,
-    addAttachment,
-    updateEntryTags,
-  };
+        const updatedTags = tagService.getValidatedEntryTags(currentTags, tags);
+        const newEntry = { ...entry, tags: updatedTags };
+
+        const updatedJournal = await journalService.updateEntry(index, journal.uid, newEntry);
+
+        return updatedJournal.entries[index];
+    };
+
+    return {
+        validate,
+        createEntry,
+        createAndSaveEntry,
+        retrieveEntriesDetails,
+        addAttachment,
+        updateEntryTags,
+    };
 };

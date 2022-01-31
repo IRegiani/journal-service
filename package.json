@@ -1,60 +1,60 @@
 {
-  "name": "journal-service",
-  "version": "1.0.0",
-  "description": "",
-  "private": true,
-  "main": "index.js",
-  "scripts": {
-    "review": "npm run test:unit && npm run test:integration",
-    "test": "npm run test:unit",
-    "pretest:unit": "npm run lint",
-    "test:unit": "echo Pending UT implementation",
-    "test:integration": "echo Pending IT implementation",
-    "lint": "eslint --config .eslintrc.js --ext .js ./src",
-    "start": "node index.js",
-    "local": "nodemon index.js",
-    "serve": "NODE_ENV=production node index.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+ssh://git@github.com/IRegiani/journal-service.git"
-  },
-  "author": "Iago R. Regiani",
-  "license": "AGPL-3.0 License",
-  "bugs": {
-    "url": "https://github.com/IRegiani/journal-service/issues"
-  },
-  "engines": {
-    "node": ">=14.16.0"
-  },
-  "homepage": "https://github.com/IRegiani/journal-service#readme",
-  "dependencies": {
-    "compression": "^1.7.4",
-    "config": "3.3.2",
-    "cors": "^2.8.5",
-    "date-fns": "^2.20.1",
-    "express": "4.17.1",
-    "express-http-context": "^1.2.4",
-    "helmet": "^4.1.1",
-    "http-status-codes": "^2.1.4",
-    "lodash": "^4.17.21",
-    "mediainfo.js": "^0.1.5",
-    "on-finished": "^2.3.0",
-    "signale": "^1.4.0",
-    "skipper": "^0.9.1",
-    "stormdb": "^0.4.1",
-    "swagger-ui-express": "^4.1.6",
-    "uuid": "^8.3.2"
-  },
-  "devDependencies": {
-    "eslint": "^7.12.0",
-    "eslint-config-airbnb-base": "^14.2.0",
-    "eslint-plugin-async-await": "0.0.0",
-    "eslint-plugin-import": "^2.22.1",
-    "eslint-plugin-promise": "^4.2.1",
-    "eslint-plugin-security": "^1.4.0",
-    "jest": "^26.6.3",
-    "nodemon": "^2.0.6",
-    "swagger-parser": "^10.0.2"
-  }
+    "name": "journal-service",
+    "version": "1.0.0",
+    "description": "",
+    "private": true,
+    "main": "index.js",
+    "scripts": {
+        "review": "npm run test:unit && npm run test:integration",
+        "test": "npm run test:unit",
+        "pretest:unit": "npm run lint",
+        "test:unit": "echo Pending UT implementation",
+        "test:integration": "echo Pending IT implementation",
+        "lint": "eslint --config .eslintrc.js --ext .js ./src",
+        "start": "node index.js",
+        "local": "nodemon index.js",
+        "serve": "NODE_ENV=production node index.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+ssh://git@github.com/IRegiani/journal-service.git"
+    },
+    "author": "Iago R. Regiani",
+    "license": "AGPL-3.0 License",
+    "bugs": {
+        "url": "https://github.com/IRegiani/journal-service/issues"
+    },
+    "engines": {
+        "node": ">=14.16.0"
+    },
+    "homepage": "https://github.com/IRegiani/journal-service#readme",
+    "dependencies": {
+        "compression": "^1.7.4",
+        "config": "3.3.2",
+        "cors": "^2.8.5",
+        "date-fns": "^2.20.1",
+        "express": "4.17.1",
+        "express-http-context": "^1.2.4",
+        "helmet": "^4.1.1",
+        "http-status-codes": "^2.1.4",
+        "lodash": "^4.17.21",
+        "mediainfo.js": "^0.1.5",
+        "on-finished": "^2.3.0",
+        "signale": "^1.4.0",
+        "skipper": "^0.9.1",
+        "stormdb": "^0.4.1",
+        "swagger-ui-express": "^4.1.6",
+        "uuid": "^8.3.2"
+    },
+    "devDependencies": {
+        "eslint": "^7.12.0",
+        "eslint-config-airbnb-base": "^14.2.0",
+        "eslint-plugin-async-await": "0.0.0",
+        "eslint-plugin-import": "^2.22.1",
+        "eslint-plugin-promise": "^4.2.1",
+        "eslint-plugin-security": "^1.4.0",
+        "jest": "^26.6.3",
+        "nodemon": "^2.0.6",
+        "swagger-parser": "^10.0.2"
+    }
 }

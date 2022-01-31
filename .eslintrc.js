@@ -14,7 +14,7 @@ module.exports = {
   },
   plugins: ['async-await', 'promise', 'security'],
   rules: {
-    indent: ['error', 2],
+    indent: ['error', 4],
     'max-len': ['error', { code: 180 }],
     'import/prefer-default-export': 'off',
     'object-curly-newline': ['off'],

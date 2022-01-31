@@ -33,24 +33,24 @@ const addNewItemOrCreateArray = (arr, newItem) => (arr ? [...arr, newItem] : [ne
  * @returns {object} The updated version of the provided original object
  */
 const updateProperties = (originalObject, changes, allowedProperties, formatCheckCB) => {
-  const forbiddenValues = ['', 'null', 'undefined'];
+    const forbiddenValues = ['', 'null', 'undefined'];
 
-  const hasFieldsToUpdate = allowedProperties ? Object.keys(changes).filter((key) => allowedProperties.includes(key)).length > 0 : true;
-  if (!hasFieldsToUpdate) throw new CustomError('No properties to update', StatusCodes.BAD_REQUEST);
+    const hasFieldsToUpdate = allowedProperties ? Object.keys(changes).filter((key) => allowedProperties.includes(key)).length > 0 : true;
+    if (!hasFieldsToUpdate) throw new CustomError('No properties to update', StatusCodes.BAD_REQUEST);
 
-  const newObject = { ...originalObject };
-  Object.entries(changes).forEach(([key, value]) => {
-    if (forbiddenValues.includes(value)) throw new CustomError(`Invalid value to update found in ${key}`, StatusCodes.BAD_REQUEST);
-    const hasInvalidFormat = formatCheckCB && value !== null && (allowedProperties ? allowedProperties.includes(key) : true) && !formatCheckCB(key, value);
-    if (hasInvalidFormat) throw new CustomError(`Invalid value ${typeof value} format in key ${key}`, StatusCodes.BAD_REQUEST);
-    if (!allowedProperties || allowedProperties.includes(key)) {
-      // eslint-disable-next-line security/detect-object-injection
-      if (value === null) newObject[key] = undefined;
-      // eslint-disable-next-line security/detect-object-injection
-      if (value) newObject[key] = value;
-    }
-  });
-  return newObject;
+    const newObject = { ...originalObject };
+    Object.entries(changes).forEach(([key, value]) => {
+        if (forbiddenValues.includes(value)) throw new CustomError(`Invalid value to update found in ${key}`, StatusCodes.BAD_REQUEST);
+        const hasInvalidFormat = formatCheckCB && value !== null && (allowedProperties ? allowedProperties.includes(key) : true) && !formatCheckCB(key, value);
+        if (hasInvalidFormat) throw new CustomError(`Invalid value ${typeof value} format in key ${key}`, StatusCodes.BAD_REQUEST);
+        if (!allowedProperties || allowedProperties.includes(key)) {
+            // eslint-disable-next-line security/detect-object-injection
+            if (value === null) newObject[key] = undefined;
+            // eslint-disable-next-line security/detect-object-injection
+            if (value) newObject[key] = value;
+        }
+    });
+    return newObject;
 };
 
 /**
@@ -66,55 +66,55 @@ const updateProperties = (originalObject, changes, allowedProperties, formatChec
  * @returns {integer} response.headers.total-count
  */
 const paginateItems = ({ limit = 10, offset = 0 }, items) => {
-  if (!limit && !offset) return { list: items };
-  const paginatedItems = items.slice(offset, offset + limit);
-  const headers = {
-    'total-count': items.length,
-    'total-pages': Math.ceil(items.length / (limit || items.length)),
-    // 'Access-Control-Expose-Headers': 'total-count, total-pages',
-  };
+    if (!limit && !offset) return { list: items };
+    const paginatedItems = items.slice(offset, offset + limit);
+    const headers = {
+        'total-count': items.length,
+        'total-pages': Math.ceil(items.length / (limit || items.length)),
+        // 'Access-Control-Expose-Headers': 'total-count, total-pages',
+    };
 
-  logger.debug('Paginating items', { offset, limit, size: items.length });
+    logger.debug('Paginating items', { offset, limit, size: items.length });
 
-  if (limit !== items.length) {
-    const previous = offset - limit;
-    const next = offset + limit;
+    if (limit !== items.length) {
+        const previous = offset - limit;
+        const next = offset + limit;
 
-    if (offset < items.length) {
-      if (previous < 0) headers['previous-offset'] = 0;
-      else headers['previous-offset'] = previous;
+        if (offset < items.length) {
+            if (previous < 0) headers['previous-offset'] = 0;
+            else headers['previous-offset'] = previous;
 
-      // headers['Access-Control-Expose-Headers'] += ', previous-offset';
+            // headers['Access-Control-Expose-Headers'] += ', previous-offset';
+        }
+
+        if (next < items.length) {
+            headers['next-offset'] = next;
+            // headers['Access-Control-Expose-Headers'] += ', next-offset';
+        }
     }
 
-    if (next < items.length) {
-      headers['next-offset'] = next;
-      // headers['Access-Control-Expose-Headers'] += ', next-offset';
-    }
-  }
-
-  return { list: paginatedItems, headers };
+    return { list: paginatedItems, headers };
 };
 
 const sortItems = ({ sortBy, order = 'asc' }, items, selectors) => {
-  logger.debug('Sorting items', { sortBy, order });
+    logger.debug('Sorting items', { sortBy, order });
 
-  if (!Object.keys(selectors).includes(sortBy)) throw new CustomError(`Invalid sortBy value: ${sortBy}`);
+    if (!Object.keys(selectors).includes(sortBy)) throw new CustomError(`Invalid sortBy value: ${sortBy}`);
 
-  // eslint-disable-next-line security/detect-object-injection
-  const sortedItems = lodash.sortBy(items, selectors[sortBy], [order]);
+    // eslint-disable-next-line security/detect-object-injection
+    const sortedItems = lodash.sortBy(items, selectors[sortBy], [order]);
 
-  return sortedItems;
+    return sortedItems;
 };
 
 
 module.exports = {
-  createHash,
-  getFileName,
-  getObjectValuesByKeys,
-  getObjectWithoutValuesByKeys,
-  addNewItemOrCreateArray,
-  updateProperties,
-  paginateItems,
-  sortItems,
+    createHash,
+    getFileName,
+    getObjectValuesByKeys,
+    getObjectWithoutValuesByKeys,
+    addNewItemOrCreateArray,
+    updateProperties,
+    paginateItems,
+    sortItems,
 };

@@ -1,16 +1,16 @@
 {
-  "cors": {
-    "origin": "*",
-    "optionsSuccessStatus": 200
-  },
-  "logger": {
-    "verbose": true,
-    "debug": true,
-    "writeToFile": false
-  },
-  "server": {
-    "port": 4000,
-    "version": "",
-    "ssl": false
-  }
+    "cors": {
+        "origin": "*",
+        "optionsSuccessStatus": 200
+    },
+    "logger": {
+        "verbose": true,
+        "debug": true,
+        "writeToFile": false
+    },
+    "server": {
+        "port": 4000,
+        "version": "",
+        "ssl": false
+    }
 }
